@@ -1,0 +1,2642 @@
+html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador 3D Avanzado de IA | Narración Sincronizada en Tiempo Real</title>
+  
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- FontAwesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-main: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --accent: #0284c7;
+      --success: #16a34a;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --border-color: #e2e8f0;
+      --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
+      --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    .app-header {
+      background: #ffffff;
+      border-bottom: 2px solid var(--border-color);
+      box-shadow: var(--shadow-sm);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .sidebar-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      box-shadow: var(--shadow-sm);
+      height: calc(100vh - 95px);
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 80px;
+    }
+
+    .concept-list {
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #cbd5e1 #f8fafc;
+    }
+
+    .concept-item {
+      cursor: pointer;
+      border-radius: 10px;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+      padding: 10px 12px;
+      margin-bottom: 5px;
+    }
+
+    .concept-item:hover {
+      background-color: #f1f5f9;
+      transform: translateX(2px);
+    }
+
+    .concept-item.active {
+      background-color: var(--primary-light);
+      border-color: #93c5fd;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* Visor 3D */
+    .viewport-container {
+      position: relative;
+      background: radial-gradient(circle at center, #ffffff 0%, #e2e8f0 100%);
+      border-radius: 16px;
+      border: 2px solid var(--border-color);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+      height: 460px;
+    }
+
+    #threejs-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .canvas-hud-overlay {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      pointer-events: none;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .canvas-hud-badge {
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(8px);
+      border: 1px solid #cbd5e1;
+      padding: 7px 15px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-main);
+      box-shadow: var(--shadow-sm);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .canvas-step-pill {
+      background: rgba(37, 99, 235, 0.95);
+      color: #ffffff;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .canvas-controls-overlay {
+      position: absolute;
+      bottom: 14px;
+      right: 14px;
+      z-index: 10;
+    }
+
+    /* Tarjetas de información con resaltado activo durante la narración */
+    .info-card {
+      background: var(--card-bg);
+      border: 2px solid var(--border-color);
+      border-radius: 14px;
+      box-shadow: var(--shadow-sm);
+      padding: 18px;
+      transition: all 0.3s ease;
+    }
+
+    .info-card.speaking-highlight {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+      background-color: #f8fbff;
+    }
+
+    .math-formula-box {
+      font-family: 'JetBrains Mono', monospace;
+      background-color: #f1f5f9;
+      border-left: 4px solid var(--primary);
+      padding: 12px 14px;
+      border-radius: 6px;
+      color: #0f172a;
+      font-size: 0.92rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .math-formula-box.speaking-highlight {
+      background-color: #dbeafe;
+      border-left-color: #1d4ed8;
+      transform: scale(1.01);
+    }
+
+    .result-box {
+      background-color: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-left: 4px solid var(--success);
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+
+    /* Ondas de sonido */
+    .sound-waves {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      height: 20px;
+    }
+    .sound-bar {
+      width: 4px;
+      background-color: var(--primary);
+      border-radius: 2px;
+      animation: sound-bounce 0.6s infinite alternate ease-in-out;
+    }
+    .sound-bar:nth-child(1) { height: 8px; animation-delay: 0.1s; }
+    .sound-bar:nth-child(2) { height: 18px; animation-delay: 0.25s; }
+    .sound-bar:nth-child(3) { height: 12px; animation-delay: 0.15s; }
+    .sound-bar:nth-child(4) { height: 16px; animation-delay: 0.35s; }
+
+    @keyframes sound-bounce {
+      0% { transform: scaleY(0.35); }
+      100% { transform: scaleY(1.25); }
+    }
+
+    .voice-captions {
+      min-height: 64px;
+      background: linear-gradient(90deg, #eff6ff 0%, #f8fafc 100%);
+      border: 2px solid #93c5fd;
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-size: 0.96rem;
+      color: #1e3a8a;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-speak-mini {
+      padding: 2px 8px;
+      font-size: 0.75rem;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Barra Superior -->
+  <header class="app-header py-2 px-4">
+    <div class="container-fluid d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div class="d-flex align-items-center gap-3">
+        <span class="badge bg-primary p-2 fs-5 rounded-3"><i class="fa-solid fa-cubes-stacked"></i></span>
+        <div>
+          <h1 class="fs-5 fw-bold mb-0 text-dark">Laboratorio 3D de Inteligencia Artificial</h1>
+          <p class="text-muted small mb-0">Simulación Paso a Paso y Narración Sincronizada &bull; Temas 3 y 4</p>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center gap-2">
+        <div class="sound-waves d-none me-2" id="voiceIndicator">
+          <span class="sound-bar"></span>
+          <span class="sound-bar"></span>
+          <span class="sound-bar"></span>
+          <span class="sound-bar"></span>
+        </div>
+        <span class="badge bg-light text-dark border px-3 py-2" id="lblAudioStatus">
+          <i class="fa-solid fa-microphone-lines text-primary me-1"></i> Narrador IA Activo
+        </span>
+        <button class="btn btn-outline-secondary btn-sm" id="btnMuteToggle" title="Activar/Silenciar Voz">
+          <i class="fa-solid fa-volume-high" id="iconMute"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Cuerpo Principal -->
+  <div class="container-fluid py-3 px-4">
+    <div class="row g-3">
+      
+      <!-- Menú Izquierdo: Los 19 Conceptos -->
+      <div class="col-lg-3 col-md-4">
+        <div class="sidebar-card p-3">
+          <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+            <span class="fw-bold text-uppercase small text-muted"><i class="fa-solid fa-Graduation-cap me-1"></i> 19 Simuladores 3D</span>
+            <span class="badge bg-primary rounded-pill" id="conceptCounter">1 / 19</span>
+          </div>
+
+          <div class="concept-list flex-grow-1 pe-1" id="conceptListContainer"></div>
+
+          <div class="pt-2 border-top mt-2 d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-sm w-50 fw-semibold" id="btnPrevConcept"><i class="fa-solid fa-arrow-left me-1"></i> Anterior</button>
+            <button class="btn btn-primary btn-sm w-50 fw-semibold" id="btnNextConcept">Siguiente <i class="fa-solid fa-arrow-right ms-1"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel Derecho: Escenario 3D, Narrador y Controles -->
+      <div class="col-lg-9 col-md-8">
+        
+        <!-- Lienzo 3D -->
+        <div class="viewport-container mb-3">
+          <div class="canvas-hud-overlay">
+            <span class="canvas-hud-badge" id="hudTopicCategory">
+              <i class="fa-solid fa-cube text-primary"></i> <span id="hudConceptTitle">Cargando...</span>
+            </span>
+            <span class="canvas-step-pill" id="hudStepBadge">Fase: Espera inicial</span>
+          </div>
+
+          <div class="canvas-controls-overlay d-flex gap-2">
+            <button class="btn btn-light btn-sm shadow-sm border fw-semibold" id="btnResetCamera" title="Centrar Vista 3D">
+              <i class="fa-solid fa-crosshairs text-primary me-1"></i> Centrar 3D
+            </button>
+            <button class="btn btn-light btn-sm shadow-sm border fw-semibold" id="btnToggleRotate" title="Girar Cámara Automáticamente">
+              <i class="fa-solid fa-rotate text-secondary me-1"></i> Orbitar
+            </button>
+          </div>
+
+          <canvas id="threejs-canvas"></canvas>
+        </div>
+
+        <!-- Barra de Controles Maestros -->
+        <div class="info-card p-3 mb-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <button class="btn btn-success px-3 fw-bold shadow-sm" id="btnPlaySim">
+              <i class="fa-solid fa-play me-1"></i> Explicar Todo y Simular 3D
+            </button>
+            <button class="btn btn-primary px-3 fw-semibold shadow-sm" id="btnNextStepManual">
+              <i class="fa-solid fa-forward-step me-1"></i> Paso a Paso Narrado
+            </button>
+            <button class="btn btn-warning px-3 fw-semibold text-dark" id="btnPauseSim">
+              <i class="fa-solid fa-pause me-1"></i> Pausar
+            </button>
+            <button class="btn btn-outline-danger" id="btnResetSim">
+              <i class="fa-solid fa-rotate-left me-1"></i> Reiniciar
+            </button>
+          </div>
+
+          <div class="d-flex align-items-center gap-2">
+            <label for="simSpeed" class="small fw-bold text-muted mb-0">Velocidad Voz/3D:</label>
+            <select id="simSpeed" class="form-select form-select-sm fw-semibold" style="width: 115px;">
+              <option value="0.85">0.85x (Pausado)</option>
+              <option value="1" selected>1.0x (Normal)</option>
+              <option value="1.25">1.25x (Ágil)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Caja de Subtítulos en Tiempo Real -->
+        <div class="voice-captions mb-3 d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <i class="fa-solid fa-comment-dots text-primary me-3 fs-4"></i>
+            <div>
+              <div class="text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.05em; color: #2563eb;">
+                Transcripción Sincronizada del Narrador IA
+              </div>
+              <div id="txtSubtitles" class="fw-medium">
+                Pulsa <strong>"Explicar Todo y Simular 3D"</strong> o interactúa con los botones de abajo para escuchar la explicación en vivo.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tarjetas de Teoría, Fórmula Explicada y Laboratorio Interactivo -->
+        <div class="row g-3">
+          <!-- Columna Izquierda: Definición, Fórmula y Estado -->
+          <div class="col-md-7">
+            <div class="info-card h-100" id="cardTheory">
+              
+              <!-- Definición -->
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <h6 class="fw-bold text-primary text-uppercase mb-0">
+                  <i class="fa-solid fa-book-open me-1"></i> 1. Definición Formal
+                </h6>
+                <button class="btn btn-outline-primary btn-speak-mini" onclick="narrarApartado('definicion')">
+                  <i class="fa-solid fa-volume-high me-1"></i> Escuchar Definición
+                </button>
+              </div>
+              <p class="text-dark small mb-3" id="detDescription"></p>
+              
+              <!-- Fórmula -->
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <h6 class="fw-bold text-muted text-uppercase small mb-0">
+                  <i class="fa-solid fa-square-root-variable text-primary me-1"></i> 2. Formulación Matemática y Significado
+                </h6>
+                <button class="btn btn-outline-primary btn-speak-mini" onclick="narrarApartado('formula')">
+                  <i class="fa-solid fa-volume-high me-1"></i> Explicar Fórmula
+                </button>
+              </div>
+              <div class="math-formula-box mb-2" id="detFormula"></div>
+              <p class="text-muted small mb-3 fst-italic" id="detFormulaExplain"></p>
+
+              <!-- Resultado y Log en Vivo -->
+              <div class="result-box">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="badge bg-success"><i class="fa-solid fa-check-circle me-1"></i> Estado y Resultado en Tiempo Real</span>
+                  <span class="small fw-bold text-success" id="simMetricBadge">Listo</span>
+                </div>
+                <p class="small text-dark fw-semibold mb-0" id="simStepLog">Esperando inicio de simulación...</p>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Columna Derecha: Ejemplo y Laboratorio Interactivo Narrado -->
+          <div class="col-md-5">
+            <div class="info-card h-100 border-start border-4 border-primary" id="cardInteractive">
+              
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <h6 class="fw-bold text-success text-uppercase mb-0">
+                  <i class="fa-solid fa-lightbulb me-1"></i> 3. Ejemplo Real y Resultado
+                </h6>
+                <button class="btn btn-outline-success btn-speak-mini" onclick="narrarApartado('ejemplo')">
+                  <i class="fa-solid fa-volume-high me-1"></i> Escuchar Ejemplo
+                </button>
+              </div>
+              <p class="text-dark small mb-3" id="detExample"></p>
+              
+              <!-- Controles Interactivos Narrados -->
+              <div class="p-3 bg-light rounded-3 border">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <h6 class="fw-bold small mb-0 text-dark">
+                    <i class="fa-solid fa-hand-pointer text-primary me-1"></i> Experimenta en el Modelo 3D (Narrado)
+                  </h6>
+                  <span class="badge bg-primary" style="font-size: 0.65rem;">Voz en Vivo</span>
+                </div>
+                <p class="text-muted" style="font-size: 0.78rem; margin-bottom: 10px;">
+                  Haz clic en cualquier acción: el modelo 3D se actualizará y el narrador te explicará qué ocurre y cuál es el resultado.
+                </p>
+                <div id="dynamicCustomControls" class="d-flex flex-column gap-2"></div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Three.js y OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- Bootstrap 5 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    /* =========================================================================
+       UTILIDADES GRÁFICAS 3D: ETIQUETAS FLOTANTES (SPRITES) Y LÍNEAS
+       ========================================================================= */
+    let scene, camera, renderer, controls;
+    let dynamicMeshes = [];
+    let activeAnimations = []; // Animaciones suaves en el loop requestAnimationFrame
+
+    function register3D(obj) {
+      scene.add(obj);
+      dynamicMeshes.push(obj);
+      return obj;
+    }
+
+    // Crea un cartel flotante 3D siempre orientado hacia la cámara
+    function createLabel3D(text, x, y, z, bgColor = "#1e293b", textColor = "#ffffff", scaleWidth = 3.2) {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = 512;
+      canvas.height = 128;
+
+      // Fondo redondeado
+      ctx.fillStyle = bgColor;
+      ctx.beginPath();
+      ctx.roundRect(10, 14, 492, 100, 24);
+      ctx.fill();
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = "#ffffff";
+      ctx.stroke();
+
+      // Texto
+      ctx.fillStyle = textColor;
+      ctx.font = "bold 34px Inter, Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, 256, 64);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.needsUpdate = true;
+      const spriteMat = new THREE.SpriteMaterial({ map: texture, depthTest: false });
+      const sprite = new THREE.Sprite(spriteMat);
+      sprite.position.set(x, y, z);
+      sprite.scale.set(scaleWidth, scaleWidth * 0.25, 1);
+      sprite.renderOrder = 999;
+      return register3D(sprite);
+    }
+
+    function updateLabel3D(sprite, newText, bgColor = "#2563eb", textColor = "#ffffff") {
+      if (!sprite || !sprite.material || !sprite.material.map) return;
+      const canvas = sprite.material.map.image;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = bgColor;
+      ctx.beginPath();
+      ctx.roundRect(10, 14, 492, 100, 24);
+      ctx.fill();
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = "#ffffff";
+      ctx.stroke();
+
+      ctx.fillStyle = textColor;
+      ctx.font = "bold 34px Inter, Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(newText, 256, 64);
+      sprite.material.map.needsUpdate = true;
+    }
+
+    function createCylinderEdge(p1, p2, radius = 0.06, colorHex = 0x94a3b8) {
+      const direction = new THREE.Vector3().subVectors(p2, p1);
+      const length = direction.length();
+      const geom = new THREE.CylinderGeometry(radius, radius, length, 12);
+      const mat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.3 });
+      const mesh = new THREE.Mesh(geom, mat);
+      mesh.position.copy(p1).add(direction.multiplyScalar(0.5));
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.clone().normalize());
+      return register3D(mesh);
+    }
+
+    /* =========================================================================
+       BASE DE DATOS RIGUROSA Y COMPLETA DE LOS 19 CONCEPTOS
+       ========================================================================= */
+    const CONCEPTO_DATA = [
+      // ==================== TEMA 3: BÚSQUEDA ====================
+      {
+        id: 0,
+        tema: "Tema 3: Búsqueda",
+        categoria: "Búsqueda",
+        icono: "fa-bullseye",
+        titulo: "Definición del Problema y Formulación en IA",
+        definicion: "Abstrae y formaliza un problema del mundo real mediante 5 componentes matemáticos: Estado Inicial (punto de partida), Acciones posibles en cada estado, Modelo de Transición (qué estado resulta tras aplicar una acción), Prueba de Meta (verifica si llegamos al objetivo) y Función de Costo de Ruta.",
+        formula: "P = ⟨ S₀, Actions(s), Result(s,a), GoalTest(s), PathCost(c) ⟩",
+        explicacionFormula: "La fórmula se lee así: Un problema P es una tupla de cinco elementos donde S sub cero es el estado inicial, Actions de s son las acciones legales, Result de s coma a es el modelo de transición que devuelve el nuevo estado, GoalTest comprueba si el estado es meta, y PathCost suma el costo acumulado de cada paso.",
+        ejemplo: "Agente robótico en un laberinto: parte de la casilla S₀=(-4,-4), ejecuta giros válidos esquivando muros grises y busca la salida dorada en (4,4) minimizando el número de pasos.",
+        setup3D: setupConcept0,
+        secuencia: [
+          {
+            fase: "1. Definición y Fórmula",
+            card: "cardTheory",
+            log: "Formalizando P = ⟨S₀, Actions, Result, GoalTest, PathCost⟩",
+            voz: "Concepto 1: Definición y formulación de problemas en Inteligencia Artificial. Todo problema se define formalmente con cinco elementos: el estado inicial S sub cero, las acciones válidas, el modelo de transición que calcula el siguiente estado, el test de meta y el costo del camino."
+          },
+          {
+            fase: "2. Estado Inicial S₀",
+            card: "cardTheory",
+            log: "Estado Inicial S₀ = (-4, -4) | Costo acumulado c = 0",
+            voz: "Observa el modelo 3D del laberinto. La esfera azul se sitúa en la coordenada inicial menos cuatro coma menos cuatro, con un costo inicial igual a cero.",
+            accion: () => moveMazeAgent(0)
+          },
+          {
+            fase: "3. Modelo de Transición",
+            card: "cardInteractive",
+            log: "Ejecutando Result(s, Avanzar) ➔ Posición (-2, 4) | Costo c = 4",
+            voz: "Al aplicar las acciones de movimiento norte y este, el modelo de transición actualiza la posición del agente bordeando los muros grises. El costo de ruta sube a cuatro unidades.",
+            accion: () => moveMazeAgent(4)
+          },
+          {
+            fase: "4. Prueba de Meta Exitosa",
+            card: "cardInteractive",
+            log: "GoalTest(4, 4) = VERDADERO | Resultado: Meta alcanzada con Costo Óptimo = 7",
+            voz: "Finalmente, el agente llega a la coordenada cuatro coma cuatro. La función GoalTest devuelve verdadero sobre el cilindro dorado, resolviendo el laberinto con un costo total de siete pasos.",
+            accion: () => moveMazeAgent(7)
+          }
+        ],
+        controles: [
+          {
+            label: "📍 Situar en Estado Inicial S₀",
+            accion: () => {
+              moveMazeAgent(0);
+              narrarAccion("Has reiniciado al agente en el estado inicial S sub cero, coordenada menos cuatro coma menos cuatro. El costo de ruta vuelve a ser cero.", "S₀ = (-4,-4) | Costo c = 0");
+            }
+          },
+          {
+            label: "👣 Aplicar Transición Result(s, a)",
+            accion: () => {
+              let next = (window.mazeIdx + 1) % window.mazeCoords.length;
+              moveMazeAgent(next);
+              const [x, z] = window.mazeCoords[next];
+              const esMeta = (next === window.mazeCoords.length - 1);
+              narrarAccion(`Transición ejecutada hacia la casilla ${x} coma ${z}. El costo acumulado ahora es ${next}. ${esMeta ? '¡Prueba de meta positiva! Has llegado al objetivo.' : 'Aún no es meta.'}`, `Estado (${x},${z}) | Costo c = ${next} | Meta: ${esMeta ? 'SÍ' : 'NO'}`);
+            }
+          },
+          {
+            label: "🏆 Ir Directo a Meta y Evaluar Costo",
+            accion: () => {
+              moveMazeAgent(7);
+              narrarAccion("El agente ha completado toda la secuencia de acciones hasta la meta dorada en cuatro coma cuatro. El resultado final arroja un costo óptimo de siete unidades.", "¡META ALCANZADA! GoalTest = True | Costo Total = 7");
+            }
+          }
+        ]
+      },
+
+      {
+        id: 1,
+        tema: "Tema 3: Búsqueda",
+        categoria: "Búsqueda",
+        icono: "fa-diagram-project",
+        titulo: "Espacios de Estados y Representación Matemática",
+        definicion: "Estructura matemática en forma de grafo dirigido G = (V, E) que mapea todas las configuraciones alcanzables desde el inicio. Los nodos (V) son estados y las aristas (E) llevan pesos numéricos que representan distancias o costos.",
+        formula: "G = (V, E),  w: E → ℝ⁺  |  Costo(Camino) = ∑ w(u, v)",
+        explicacionFormula: "En esta fórmula, G es el grafo compuesto por el conjunto de vértices V y aristas E. La función w asigna a cada conexión un peso real positivo, de modo que el costo total del viaje es la sumatoria de los pesos de las carreteras recorridas.",
+        ejemplo: "Mapa de rutas de España: viajar desde Madrid (S₀) hasta Barcelona (Meta) comparando el corredor norte por Zaragoza (615 km en total) frente al corredor este por Valencia (650 km).",
+        setup3D: setupConcept1,
+        secuencia: [
+          {
+            fase: "1. Teoría y Grafo",
+            card: "cardTheory",
+            log: "Grafo G=(V,E) con 6 ciudades y aristas ponderadas en km.",
+            voz: "Concepto 2: Espacios de estados. Representamos el problema como un grafo matemático donde cada esfera es una ciudad y cada cilindro es una carretera con su distancia en kilómetros."
+          },
+          {
+            fase: "2. Evaluando Ruta por Valencia",
+            card: "cardInteractive",
+            log: "Ruta Sur-Este: Madrid ➔ Valencia (350km) ➔ Barcelona (300km) = 650 km",
+            voz: "Si exploramos la transición Madrid hacia Valencia y luego Barcelona, sumamos trescientos cincuenta más trescientos kilómetros, dando un resultado de seiscientos cincuenta kilómetros.",
+            accion: () => highlightCityPath([0, 2, 3], 0xd97706)
+          },
+          {
+            fase: "3. Resultado: Camino Óptimo",
+            card: "cardInteractive",
+            log: "Ruta Óptima: Madrid ➔ Zaragoza (315km) ➔ Barcelona (300km) = 615 km",
+            voz: "En cambio, al evaluar la ruta Madrid hacia Zaragoza y Barcelona, la suma de pesos w es trescientos quince más trescientos: seiscientos quince kilómetros en total, obteniendo el camino matemático más corto.",
+            accion: () => highlightCityPath([0, 1, 3], 0x16a34a)
+          }
+        ],
+        controles: [
+          {
+            label: "🛣️ Evaluar Ruta vía Zaragoza (615 km)",
+            accion: () => {
+              highlightCityPath([0, 1, 3], 0x16a34a);
+              narrarAccion("Has seleccionado la ruta norte: Madrid a Zaragoza son 315 kilómetros, y de Zaragoza a Barcelona son 300 kilómetros. Resultado óptimo: 615 kilómetros.", "Ruta Zaragoza: 315 + 300 = 615 km (ÓPTIMA)");
+            }
+          },
+          {
+            label: "🛣️ Evaluar Ruta vía Valencia (650 km)",
+            accion: () => {
+              highlightCityPath([0, 2, 3], 0xd97706);
+              narrarAccion("Has seleccionado la alternativa por Valencia: suma 350 más 300 kilómetros. Resultado: 650 kilómetros, es decir, 35 kilómetros más larga que la óptima.", "Ruta Valencia: 350 + 300 = 650 km (Subóptima)");
+            }
+          },
+          {
+            label: "🛣️ Evaluar Desvío Sur Sevilla-Granada",
+            accion: () => {
+              highlightCityPath([0, 4, 5, 2, 3], 0xdc2626);
+              narrarAccion("Explorando desvío por el sur pasando por Sevilla y Granada: el costo acumulado se dispara a 1,420 kilómetros. El algoritmo descarta esta rama por exceso de costo.", "Ruta Sur: 1,420 km (Descartada)");
+            }
+          }
+        ]
+      },
+
+      {
+        id: 2,
+        tema: "Tema 3: Búsqueda",
+        categoria: "Búsqueda",
+        icono: "fa-dna",
+        titulo: "Estrategias de Búsqueda (Deterministas, Heurísticas y Evolutivas)",
+        definicion: "Conjunto de políticas para decidir qué caminos explorar. Mientras las deterministas siguen un orden rígido, las evolutivas (Algoritmos Genéticos) mantienen una población de rutas candidatas (cromosomas) que evolucionan mediante selección natural, cruce y mutación.",
+        formula: "Fitness(Cᵢ) = 1 / Costo(Cᵢ)  |  P(Selecciónᵢ) = Fitness(Cᵢ) / ∑ Fitness",
+        explicacionFormula: "La aptitud o Fitness de un cromosoma C sub i es inversamente proporcional a su longitud o costo: cuanto más corta es la ruta, mayor es su Fitness y mayor su probabilidad de reproducirse en la siguiente generación.",
+        ejemplo: "Planificación de rutas logísticas: 5 trayectorias candidatas compiten en paralelo; las curvas largas rojas se extinguen y la trayectoria verde más tensa y directa sobrevive.",
+        setup3D: setupConcept2,
+        secuencia: [
+          {
+            fase: "1. Población Inicial",
+            card: "cardTheory",
+            log: "Generación 1: 5 cromosomas (rutas) generados aleatoriamente.",
+            voz: "Concepto 3: Estrategias de búsqueda evolutivas. En pantalla observas cinco tubos tridimensionales que representan rutas candidatas o cromosomas entre el origen y el destino."
+          },
+          {
+            fase: "2. Evaluación de Fitness",
+            card: "cardTheory",
+            log: "Calculando Fitness(Ci) = 1/Longitud. Rutas curvas dan baja aptitud.",
+            voz: "Aplicamos la fórmula de aptitud: las rutas con curvas pronunciadas tienen alto costo y se tiñen de rojo al tener bajo Fitness, mientras la ruta central más recta destaca en verde.",
+            accion: () => evolveGeneration(2)
+          },
+          {
+            fase: "3. Cruce, Mutación y Convergencia",
+            card: "cardInteractive",
+            log: "Generación Final: Ruta óptima consolidada con Fitness = 98.7%",
+            voz: "Tras cruzar y mutar las mejores soluciones, toda la población converge hacia la trayectoria central verde, logrando un resultado óptimo con noventa y ocho punto siete por ciento de eficiencia.",
+            accion: () => evolveGeneration(5)
+          }
+        ],
+        controles: [
+          {
+            label: "🧬 Evaluar Fitness de Población Actual",
+            accion: () => {
+              evolveGeneration(2);
+              narrarAccion("Evaluando la función Fitness igual a uno sobre costo: cuatro rutas presentan desviaciones costosas y se marcan en rojo; el cromosoma central obtiene la máxima puntuación.", "Fitness Evaluado: Cromosoma 3 lidera con 98.7%");
+            }
+          },
+          {
+            label: "⚡ Aplicar Operador de Cruce y Mutación",
+            accion: () => {
+              evolveGeneration(5);
+              narrarAccion("Aplicando selección y cruce genético: los cromosomas deficientes son reemplazados por descendientes de la ruta verde óptima, reduciendo el costo global.", "Evolución completada: Población optimizada");
+            }
+          }
+        ]
+      },
+
+      {
+        id: 3,
+        tema: "Tema 3: Búsqueda",
+        categoria: "Búsqueda",
+        icono: "fa-sitemap",
+        titulo: "Búsqueda a Ciegas (Amplitud BFS y Profundidad DFS)",
+        definicion: "Estrategias no informadas que exploran el árbol sin estimar qué tan cerca está la meta. Amplitud (BFS) usa una cola FIFO explorando por capas horizontales; Profundidad (DFS) usa una pila LIFO descendiendo a fondo por una sola rama.",
+        formula: "BFS (Cola FIFO): O(b^d)  |  DFS (Pila LIFO): O(b · m) memoria",
+        explicacionFormula: "Donde b es el factor de ramificación y d la profundidad de la solución óptima. BFS tiene complejidad exponencial b elevado a d pero garantiza hallar el camino más corto en pasos; DFS solo gasta memoria lineal b por m.",
+        ejemplo: "Red de metro: BFS explora primero todas las estaciones a 1 parada de distancia y luego a 2 paradas, hallando la ruta con menos transbordos en el nodo N5.",
+        setup3D: setupConcept3,
+        secuencia: [
+          {
+            fase: "1. Árbol de Búsqueda Ciega",
+            card: "cardTheory",
+            log: "Árbol de 7 nodos (Raíz N0, Nivel 1: N1-N2, Nivel 2: N3-N6).",
+            voz: "Concepto 4: Búsqueda a ciegas. Observa el árbol jerárquico en 3D con tres niveles de profundidad. El algoritmo no posee brújula hacia la meta, solo conoce la estructura de conexiones."
+          },
+          {
+            fase: "2. Exploración en Amplitud (BFS)",
+            card: "cardInteractive",
+            log: "BFS (Cola FIFO): N0 ➔ N1, N2 (Nivel 1) ➔ N3, N4, N5 (¡Meta en Nivel 2!)",
+            voz: "Al ejecutar Búsqueda en Amplitud con una cola FIFO, se iluminan en azul primero la raíz, luego todo el nivel uno completo y después el nivel dos, encontrando la solución de menor profundidad.",
+            accion: () => runTreeSearchAnim('BFS')
+          }
+        ],
+        controles: [
+          {
+            label: "🔵 Ejecutar Búsqueda en Amplitud (BFS - Cola FIFO)",
+            accion: () => {
+              runTreeSearchAnim('BFS');
+              narrarAccion("Ejecutando Búsqueda en Amplitud BFS: exploramos por capas horizontales completas usando una cola FIFO: primero N cero, luego N uno y N dos, y finalmente la capa inferior. Resultado: garantiza encontrar la meta más cercana.", "Orden BFS: N0 ➔ N1 ➔ N2 ➔ N3 ➔ N4 ➔ N5 ➔ N6");
+            }
+          },
+          {
+            label: "🟠 Ejecutar Búsqueda en Profundidad (DFS - Pila LIFO)",
+            accion: () => {
+              runTreeSearchAnim('DFS');
+              narrarAccion("Ejecutando Búsqueda en Profundidad DFS: usando una pila LIFO, nos sumergimos por el extremo izquierdo desde N cero hasta N uno y la hoja N tres antes de retroceder por backtracking. Resultado: ahorra memoria pero no garantiza el camino más corto.", "Orden DFS: N0 ➔ N1 ➔ N3 ➔ N4 ➔ N2 ➔ N5 ➔ N6");
+            }
+          }
+        ]
+      },
+
+      {
+        id: 4,
+        tema: "Tema 3: Búsqueda",
+        categoria: "Búsqueda",
+        icono: "fa-compass",
+        titulo: "Búsqueda Heurística (Ascensión a la Cima y Algoritmo A*)",
+        definicion: "Utiliza conocimiento del problema mediante una función heurística h(n) que estima el costo restante hasta la meta. El algoritmo A* suma el costo real acumulado g(n) y la heurística h(n) para expandir únicamente los nodos más prometedores.",
+        formula: "f(n) = g(n) + h(n)   |   Condición de Admisibilidad: 0 ≤ h(n) ≤ h*(n)",
+        explicacionFormula: "f de n es el costo total estimado del camino pasando por el nodo n. Se obtiene sumando g de n, que es lo que ya nos costó llegar desde el inicio hasta n, más h de n, que es la distancia en línea recta hasta la meta. Si h nunca sobreestima el costo real, A estrella es óptimo.",
+        ejemplo: "Navegador GPS: rodea el muro de bloques rojos priorizando las casillas celestes que minimizan la suma de pasos recorridos g(n) más la línea amarilla directa al destino h(n).",
+        setup3D: setupConcept4,
+        secuencia: [
+          {
+            fase: "1. Función de Evaluación A*",
+            card: "cardTheory",
+            log: "Fórmula A*: f(n) = g(n) [Costo real] + h(n) [Distancia recta a Meta]",
+            voz: "Concepto 5: Búsqueda Heurística A estrella. En el tablero 3D ves una línea amarilla que une al agente azul con la meta verde: esa línea representa la heurística h de n."
+          },
+          {
+            fase: "2. Evitando Obstáculos con f(n)",
+            card: "cardInteractive",
+            log: "Expandiendo casillas con menor f(n) = g(n) + h(n) alrededor del muro rojo.",
+            voz: "En cada paso, A estrella suma los pasos dados g de n más la distancia restante h de n. Al toparse con la barrera roja central, elige las celdas laterales de menor valor f.",
+            accion: () => runAStarAnim()
+          }
+        ],
+        controles: [
+          {
+            label: "🧭 Ejecutar Ruta Óptima con A* (f = g + h)",
+            accion: () => {
+              runAStarAnim();
+              narrarAccion("Ejecutando algoritmo A estrella: en cada baldosa iluminada en celeste se calcula f igual a g más h. El agente rodea el obstáculo central por el camino de menor costo total, llegando a la meta en 8 pasos óptimos.", "Resultado A*: Meta alcanzada | g(n)=8, h(n)=0 ➔ f(n)=8");
+            }
+          },
+          {
+            label: "📏 Mostrar Cálculo Heurístico en Punto Medio",
+            accion: () => {
+              moveAStarToMid();
+              narrarAccion("En la casilla intermedia uno coma menos dos, el agente ha dado 4 pasos reales, por lo que g vale 4. La distancia Manhattan restante hasta la meta es 7. Sumando ambos, f de n resulta igual a 11.", "Nodo (1,-2): g(n) = 4 + h(n) = 7 ➔ Evaluación f(n) = 11");
+            }
+          }
+        ]
+      },
+
+      {
+        id: 5,
+        tema: "Tema 3: Búsqueda",
+        categoria: "Búsqueda",
+        icono: "fa-border-all",
+        titulo: "Verificación de Restricciones y Optimización (CSP)",
+        definicion: "Resuelve problemas definidos por un conjunto de variables (X), un dominio de valores posibles para cada variable (D) y un conjunto de restricciones obligatorias (C) que prohíben combinaciones conflictivas.",
+        formula: "CSP = ⟨ X, D, C ⟩  |  Restricción binaria: Cᵢⱼ ⊆ Dᵢ × Dⱼ (Xᵢ ≠ Xⱼ)",
+        explicacionFormula: "Un problema CSP agrupa las variables X, sus dominios de colores o turnos D, y las restricciones C. La condición X sub i distinto de X sub j exige que dos nodos conectados por una arista no puedan tener jamás el mismo valor asignado.",
+        ejemplo: "Asignación de aulas y horarios universitarios: 3 asignaturas conectadas entre sí (comparten alumnos) no pueden impartirse a la misma hora (mismo color).",
+        setup3D: setupConcept5,
+        secuencia: [
+          {
+            fase: "1. Detección de Conflicto",
+            card: "cardTheory",
+            log: "Estado Inicial Inválido: X₁=Rojo, X₂=Rojo, X₃=Rojo (¡Violación de Cᵢⱼ!)",
+            voz: "Concepto 6: Satisfacción de Restricciones CSP. En el escenario vemos tres bloques que representan asignaturas conectadas. Inicialmente todas tienen el mismo horario rojo, violando las restricciones."
+          },
+          {
+            fase: "2. Propagación y Backtracking",
+            card: "cardInteractive",
+            log: "Aplicando AC-3 y Backtracking: X₁=Rojo, X₂=Verde, X₃=Azul (0 conflictos)",
+            voz: "El algoritmo de propagación de restricciones detecta la colisión y reasigna valores del dominio: bloque uno Rojo, bloque dos Verde y bloque tres Azul. Resultado: cero conflictos.",
+            accion: () => resolveCSP3D()
+          }
+        ],
+        controles: [
+          {
+            label: "⚠️ Provocar Colisión de Horarios (Conflicto)",
+            accion: () => {
+              triggerCSPConflict();
+              narrarAccion("Has asignado el mismo horario rojo a las tres aulas conectadas. Las aristas se ponen en alerta porque se viola la restricción X sub i distinto de X sub j. Estado inválido.", "¡CONFLICTO CSP! Violación de restricción X₁ = X₂ = Rojo");
+            }
+          },
+          {
+            label: "✅ Resolver con Consistencia de Arcos (AC-3)",
+            accion: () => {
+              resolveCSP3D();
+              narrarAccion("Ejecutando verificación de restricciones AC-3: se asigna las 8 AM al aula uno en rojo, las 10 AM al aula dos en verde, y las 12 PM al aula tres en azul. Todas las restricciones se cumplen satisfactoriamente.", "Resultado CSP: Asignación Válida (Rojo, Verde, Azul)");
+            }
+          }
+        ]
+      },
+
+      {
+        id: 6,
+        tema: "Tema 3: Búsqueda",
+        categoria: "Búsqueda",
+        icono: "fa-chess",
+        titulo: "Búsqueda con Adversarios (Minimax y Poda Alfa-Beta)",
+        definicion: "Estrategia para juegos competitivos por turnos. El agente propio (MAX) elige la jugada que maximiza la puntuación, asumiendo que el oponente (MIN) responderá eligiendo la jugada que minimice dicha puntuación. La Poda Alfa-Beta corta ramas inútiles.",
+        formula: "Minimax(s) = max_a min_{s'} Utilidad(s')  |  Condición de Poda: β ≤ α",
+        explicacionFormula: "MAX busca el valor máximo entre los mínimos que dejará elegir el rival MIN. Alfa guarda la mejor puntuación ya asegurada para MAX, y Beta la mejor para MIN. Cuando Beta es menor o igual que Alfa, se poda el resto de la rama porque jamás será elegida.",
+        ejemplo: "Motor de ajedrez: tras asegurar +5 puntos en la jugada izquierda (α=5), al ver que en la jugada derecha el rival puede forzar un 2 (β=2), corta el resto de la rama derecha sin calcularla.",
+        setup3D: setupConcept6,
+        secuencia: [
+          {
+            fase: "1. Árbol de Juego MAX / MIN",
+            card: "cardTheory",
+            log: "Nivel Superior: MAX (Azul) | Nivel Medio: Oponente MIN (Ámbar)",
+            voz: "Concepto 7: Búsqueda con adversarios Minimax y Poda Alfa-Beta. La pirámide azul superior es nuestro turno MAX, y las pirámides invertidas naranjas son la respuesta del rival MIN."
+          },
+          {
+            fase: "2. Evaluación y Corte Alfa-Beta",
+            card: "cardInteractive",
+            log: "Rama Izq da α = 5 | Rama Der halla β = 2 ≤ α ➔ ¡PODA ALFA-BETA!",
+            voz: "Por la izquierda aseguramos alfa igual a cinco. Al explorar la derecha, el rival tiene una jugada que nos baja a beta igual a dos. Como dos es menor que cinco, aplicamos poda Alfa-Beta cortando el nodo derecho en rojo.",
+            accion: () => executeAlphaBetaPruning()
+          }
+        ],
+        controles: [
+          {
+            label: "♟️ Evaluar Subárbol Izquierdo (Asegurar α = 5)",
+            accion: () => {
+              evalLeftMinimax();
+              narrarAccion("Evaluando rama izquierda: las hojas valen 5 y 8. Como juega el oponente MIN, elegirá el menor valor para perjudicarnos, que es 5. Por tanto, nuestro piso garantizado alfa vale 5.", "Rama Izquierda evaluada: MIN elige min(5,8) = 5 ➔ α = 5");
+            }
+          },
+          {
+            label: "✂️ Ejecutar Poda Alfa-Beta en Rama Derecha",
+            accion: () => {
+              executeAlphaBetaPruning();
+              narrarAccion("Evaluando primera hoja derecha: vale 2. El oponente MIN podrá forzarnos como máximo un 2, así que beta vale 2. Como beta es menor que alfa igual a 5, ¡se ejecuta la poda Alfa-Beta! Ahorramos evaluar el último nodo.", "¡PODA EJECUTADA! β(2) ≤ α(5) ➔ Jugada ganadora: Izquierda (+5)");
+            }
+          }
+        ]
+      },
+
+      {
+        id: 7,
+        tema: "Tema 3: Búsqueda",
+        categoria: "Búsqueda",
+        icono: "fa-car-burst",
+        titulo: "Búsqueda en Entornos Dinámicos",
+        definicion: "Algoritmos de planificación incremental en tiempo real (como D* Lite o RRT*) diseñados para robótica y vehículos autónomos, capaces de reparar localmente la trayectoria en milisegundos cuando aparecen obstáculos imprevistos.",
+        formula: "Ruta*(t) = argmin_P ∑ [ Costo(e) + Penalización_Colisión(Obstáculo_t) ]",
+        explicacionFormula: "La trayectoria óptima en el instante t se recalcula continuamente buscando el camino P que minimice el costo de desplazamiento y asigne costo infinito a las zonas bloqueadas por obstáculos detectados en tiempo real.",
+        ejemplo: "Vehículo autónomo detectando con su radar LIDAR un obstáculo rojo que irrumpe en la vía, generando al instante un arco verde de evasión segura.",
+        setup3D: setupConcept7,
+        secuencia: [
+          {
+            fase: "1. Navegación Nominal",
+            card: "cardTheory",
+            log: "Vehículo autónomo en trayectoria recta despejada | LIDAR activo.",
+            voz: "Concepto 8: Búsqueda en entornos dinámicos. El vehículo azul avanza por la autopista escaneando el entorno con su anillo LIDAR."
+          },
+          {
+            fase: "2. Aparición de Obstáculo y Evasión",
+            card: "cardInteractive",
+            log: "¡Obstáculo en z=0! Algoritmo D* Lite recalcula curva de evasión en 12 ms.",
+            voz: "De pronto irrumpe un obstáculo rojo en el carril. El planificador dinámico invalida la línea recta, traza una curva de evasión lateral y esquiva la colisión con éxito.",
+            accion: () => runDynamicCarSim()
+          }
+        ],
+        controles: [
+          {
+            label: "🚧 Lanzar Obstáculo Imprevisto y Recalcular",
+            accion: () => {
+              runDynamicCarSim();
+              narrarAccion("¡Atención! Un obstáculo imprevisto ha caído sobre la calzada. El sensor LIDAR detecta el bloqueo, incrementa el costo del carril central a infinito y el algoritmo D estrella recalcula una maniobra evasiva segura en 12 milisegundos.", "Maniobra D* Lite: Evasión completada sin colisión");
+            }
+          }
+        ]
+      },
+
+      {
+        id: 8,
+        tema: "Tema 3: Búsqueda",
+        categoria: "Búsqueda",
+        icono: "fa-network-wired",
+        titulo: "Metaheurísticas Avanzadas y Optimización Estocástica",
+        definicion: "Métodos de optimización global (Enjambre de Partículas PSO, Recocido Simulado, MCTS con Redes Profundas) que exploran superficies complejas llenas de trampas (óptimos locales) combinando exploración estocástica y memoria colectiva.",
+        formula: "vᵢ(t+1) = w·vᵢ(t) + c₁·r₁·(pBestᵢ - xᵢ) + c₂·r₂·(gBest - xᵢ)",
+        explicacionFormula: "En la optimización por enjambre, la nueva velocidad v de cada partícula combina su inercia w, su atracción cognitiva hacia su mejor posición personal pBest, y la atracción social hacia la mejor posición descubierta por todo el enjambre gBest.",
+        ejemplo: "Enjambre de 16 agentes explorando una superficie topográfica 3D hasta converger todos en el valle central más profundo (Mínimo Global).",
+        setup3D: setupConcept8,
+        secuencia: [
+          {
+            fase: "1. Paisaje Multimodal",
+            card: "cardTheory",
+            log: "Superficie 3D no convexa con múltiples picos y valles locales.",
+            voz: "Concepto 9: Metaheurísticas avanzadas. Observa la malla tridimensional ondulada y las dieciséis partículas dispersas buscando el punto de menor energía."
+          },
+          {
+            fase: "2. Convergencia al Óptimo Global",
+            card: "cardInteractive",
+            log: "Partículas actualizan velocidad hacia gBest (0,0) ➔ ¡Óptimo Global hallado!",
+            voz: "Guiadas por la ecuación vectorial que combina memoria individual y colectiva, las partículas escapan de las colinas locales y convergen en el valle central óptimo.",
+            accion: () => convergeSwarmPSO(true)
+          }
+        ],
+        controles: [
+          {
+            label: "🌪️ Dispersar Enjambre (Exploración Estocástica)",
+            accion: () => {
+              convergeSwarmPSO(false);
+              narrarAccion("Has dispersado las partículas aleatoriamente por todo el espacio 3D. Esta fase de exploración evita que el algoritmo quede atrapado prematuramente en un falso valle local.", "Fase Exploración: 16 partículas muestreando el relieve");
+            }
+          },
+          {
+            label: "🎯 Converger hacia el Mejor Global (gBest)",
+            accion: () => {
+              convergeSwarmPSO(true);
+              narrarAccion("Aplicando la fórmula de actualización vectorial: todas las partículas son atraídas hacia el mínimo global descubierto por el grupo en el centro del mapa. Resultado: optimización completada.", "Resultado PSO: Convergencia en Mínimo Global (0, 0)");
+            }
+          }
+        ]
+      },
+
+      // ==================== TEMA 4: REPRESENTACIÓN DEL CONOCIMIENTO ====================
+      {
+        id: 9,
+        tema: "Tema 4: Conocimiento",
+        categoria: "Conocimiento",
+        icono: "fa-database",
+        titulo: "Bases de Conocimiento y Almacenamiento Estructurado",
+        definicion: "Repositorio formal donde el conocimiento experto se almacena como sentencias declarativas explícitas (Hechos y Axiomas), permitiendo a un motor de inferencia deducir nuevas verdades que no estaban escritas literalmente.",
+        formula: "KB ⊨ α   ⟺   M(KB) ⊆ M(α)   |   Operaciones: TELL(KB, hecho), ASK(KB, α)",
+        explicacionFormula: "El símbolo de doble torniquete significa entrañamiento lógico: la Base de Conocimiento KB implica la conclusión alfa si y solo si en todos los mundos posibles donde la base es verdadera, alfa también es verdadera. Con TELL insertamos conocimiento y con ASK consultamos.",
+        ejemplo: "Base clínica: almacena los hechos [Paciente tiene Infección], [Paciente es Alérgico a Penicilina] y deduce automáticamente [Contraindicado recetar Amoxicilina].",
+        setup3D: setupConcept9,
+        secuencia: [
+          {
+            fase: "1. Arquitectura KB (TELL / ASK)",
+            card: "cardTheory",
+            log: "Repositorio estructurado de 4 módulos axiomáticos interconectados.",
+            voz: "Concepto 10: Bases de conocimiento. En pantalla vemos cuatro módulos cúbicos donde se codifican hechos médicos y axiomas farmacológicos."
+          },
+          {
+            fase: "2. Consulta ASK y Deducción",
+            card: "cardInteractive",
+            log: "ASK(KB, ¿Recetar Amoxicilina?) ➔ Deducción: BLOQUEADO por alergia cruzada.",
+            voz: "Al consultar mediante la operación ASK si podemos administrar el fármaco, la base cruza el hecho de infección con el axioma de alergia y deduce en rojo una alerta de contraindicación.",
+            accion: () => queryKB3D()
+          }
+        ],
+        controles: [
+          {
+            label: "📥 TELL(KB): Insertar Hechos del Paciente",
+            accion: () => {
+              insertKB3D();
+              narrarAccion("Ejecutando operación TELL: se han registrado formalmente en los primeros bloques los hechos 'Diagnóstico Infección Bacteriana' y 'Historial de Alergia a Betalactámicos'.", "TELL ejecutado: 2 nuevos hechos clínicos almacenados");
+            }
+          },
+          {
+            label: "🔍 ASK(KB): Consultar Inferencia de Fármaco",
+            accion: () => {
+              queryKB3D();
+              narrarAccion("Ejecutando operación ASK: el motor comprueba qué modelos satisfacen la base de conocimiento y deduce que recetar el antibiótico estándar causaría shock. Resultado: contraindicación detectada y alternativa segura sugerida.", "Resultado ASK: KB ⊨ Contraindicación (Alerta Preventiva)");
+            }
+          }
+        ]
+      },
+
+      {
+        id: 10,
+        tema: "Tema 4: Conocimiento",
+        categoria: "Conocimiento",
+        icono: "fa-code-branch",
+        titulo: "Modelos de Representación: Simbólicos, Conexionistas e Híbridos",
+        definicion: "Compara tres paradigmas: el Conexionista (aprende patrones sub-simbólicos mediante pesos en redes neuronales), el Simbólico (razona con reglas lógicas transparentes) y el Híbrido Neuro-Simbólico (une la percepción neuronal con el razonamiento lógico explicable).",
+        formula: "Diagnóstico = Motor_Simbólico( Conceptos_Extraídos( Red_CNN(Imagen_X) ) )",
+        explicacionFormula: "La ecuación compuesta muestra cómo la matriz de píxeles X pasa primero por la red neuronal convolucional para detectar características visuales, las cuales se traducen en símbolos que el motor lógico evalúa para emitir un diagnóstico justificado.",
+        ejemplo: "Diagnóstico médico híbrido: una red neuronal (izquierda) analiza una radiografía pulmonar y el bloque simbólico (derecha) aplica el protocolo clínico para justificar el tratamiento.",
+        setup3D: setupConcept10,
+        secuencia: [
+          {
+            fase: "1. Paradigma Conexionista vs Simbólico",
+            card: "cardTheory",
+            log: "Izquierda: Red Neuronal Multicapa | Derecha: Árbol Lógico Simbólico.",
+            voz: "Concepto 11: Modelos simbólicos, conexionistas e híbridos. A la izquierda observas una red neuronal de esferas interconectadas; a la derecha, un módulo simbólico de reglas explícitas."
+          },
+          {
+            fase: "2. Fusión Neuro-Simbólica",
+            card: "cardInteractive",
+            log: "CNN detecta patrón (p=0.96) ➔ Puente traduce a símbolo ➔ Regla valida diagnóstico.",
+            voz: "Cuando activamos el flujo híbrido, las capas neuronales se iluminan extrayendo el patrón visual, lo envían por el puente dorado central y el motor simbólico certifica la conclusión con explicación clínica.",
+            accion: () => triggerHybridFlow()
+          }
+        ],
+        controles: [
+          {
+            label: "🧠 1. Activar Percepción Conexionista (Red Neuronal)",
+            accion: () => {
+              triggerNeuralOnly();
+              narrarAccion("Activando únicamente el modelo conexionista: los pesos sinápticos procesan la señal de entrada con alta precisión estadística del 96 por ciento, pero por sí solos actúan como una caja negra sin explicación verbal.", "Red Conexionista: Vector de activación [0.96, 0.04] generado");
+            }
+          },
+          {
+            label: "🔗 2. Ejecutar Fusión Híbrida Neuro-Simbólica",
+            accion: () => {
+              triggerHybridFlow();
+              narrarAccion("Activando arquitectura Neuro-Simbólica completa: la percepción de la red neuronal se convierte en un predicado simbólico a través del puente dorado y el motor de reglas valida el resultado final explicando el porqué.", "Resultado Híbrido: Alta precisión + Explicabilidad lógica 100%");
+            }
+          }
+        ]
+      },
+
+      {
+        id: 11,
+        tema: "Tema 4: Conocimiento",
+        categoria: "Conocimiento",
+        icono: "fa-scale-balanced",
+        titulo: "Lógica Clásica y Sistemas de Inferencia Deductiva",
+        definicion: "Emplea Lógica de Primer Orden con cuantificadores universales (∀) y existenciales (∃), aplicando reglas de inferencia deductiva como Modus Ponens para derivar conclusiones irrefutables a partir de premisas verdaderas.",
+        formula: "Premisa 1: ∀x (Mamífero(x) → Vertebrado(x))  |  Premisa 2: Mamífero(Perro)  ⊢  Vertebrado(Perro)",
+        explicacionFormula: "El cuantificador invertido A se lee 'Para todo x': si x es un mamífero, entonces implica que x es vertebrado. Al instanciar el hecho de que el perro es mamífero, la regla Modus Ponens deduce obligatoriamente que el perro es vertebrado.",
+        ejemplo: "Inclusión de conjuntos de Euler en 3D: la esfera verde 'Perro' está dentro del anillo azul 'Mamíferos', el cual está contenido dentro del anillo exterior 'Vertebrados'.",
+        setup3D: setupConcept11,
+        secuencia: [
+          {
+            fase: "1. Premisas en Lógica de Primer Orden",
+            card: "cardTheory",
+            log: "Anillo Exterior: Vertebrados | Anillo Medio: Mamíferos | Centro: Perro.",
+            voz: "Concepto 12: Lógica clásica e inferencia deductiva. Los anillos concéntricos en 3D representan cuantificadores universales: todo elemento dentro del anillo azul de mamíferos está forzosamente dentro del anillo exterior de vertebrados."
+          },
+          {
+            fase: "2. Disparo de Modus Ponens",
+            card: "cardInteractive",
+            log: "Aplicando Modus Ponens ➔ Conclusión demostrada: Vertebrado(Perro) = VERDADERO.",
+            voz: "Al verificar que la esfera central Perro pertenece a Mamíferos, el sistema aplica Modus Ponens e ilumina toda la jerarquía en dorado, demostrando sin margen de duda que el perro es vertebrado.",
+            accion: () => fireModusPonens3D()
+          }
+        ],
+        controles: [
+          {
+            label: "⚖️ Ejecutar Demostración por Modus Ponens",
+            accion: () => {
+              fireModusPonens3D();
+              narrarAccion("Aplicando regla de inferencia Modus Ponens: dado que para todo x, Mamífero de x implica Vertebrado de x, y sabiendo que Perro es Mamífero, se concluye con verdad lógica absoluta que Perro es Vertebrado.", "Teorema Demostrado (Q.E.D.): Vertebrado(Perro) = TRUE");
+            }
+          }
+        ]
+      },
+
+      {
+        id: 12,
+        tema: "Tema 4: Conocimiento",
+        categoria: "Conocimiento",
+        icono: "fa-gears",
+        titulo: "Reglas de Producción y Sistemas Expertos",
+        definicion: "Sistemas que emulan a un experto humano mediante una base de reglas condicionales SI-ENTONCES (IF-THEN) y una memoria de trabajo. Su motor de inferencia opera en tres pasos: Equiparación (Matching), Resolución de Conflictos y Disparo (Firing).",
+        formula: "Regla Rₖ: SI (Monto > $10,000) ∧ (País ≠ Habitual) ENTONCES Acción(Bloquear_Tarjeta)",
+        explicacionFormula: "La regla de producción evalúa una conjunción lógica Y entre varias condiciones sobre los datos entrantes. Si todas las premisas del antecedente se cumplen simultáneamente, el motor dispara la acción del consecuente.",
+        ejemplo: "Motor bancario antifraude en vivo: cada esfera que avanza por la cinta es una transacción evaluada al cruzar el arco detector.",
+        setup3D: setupConcept12,
+        secuencia: [
+          {
+            fase: "1. Motor de Reglas IF-THEN",
+            card: "cardTheory",
+            log: "Arco Detector cargado con Regla Antifraude: SI Monto > $10,000 ∧ Extranjero.",
+            voz: "Concepto 13: Reglas de producción y sistemas expertos. En la escena vemos una línea de procesamiento bancaria y un arco detector que contiene la regla SI monto supera diez mil dólares en el extranjero, ENTONCES bloquear."
+          },
+          {
+            fase: "2. Disparo de Regla (Firing)",
+            card: "cardInteractive",
+            log: "Transacción de $15,000 detectada ➔ Equiparación Positiva ➔ ¡TARJETA BLOQUEADA!",
+            voz: "Cuando la transacción ingresa al arco, cumple ambas condiciones de la fórmula. La regla se dispara tiñendo el arco y el token de rojo, bloqueando preventivamente la tarjeta.",
+            accion: () => runExpertSystemSim('fraude')
+          }
+        ],
+        controles: [
+          {
+            label: "💳 Enviar Transacción Normal ($45 Local)",
+            accion: () => {
+              runExpertSystemSim('normal');
+              narrarAccion("Enviando compra local de 45 dólares por la cinta: al cruzar la compuerta lógica, el antecedente de la regla da Falso. La compuerta se ilumina en verde y la transacción es aprobada.", "Regla No Disparada: Transacción Aprobada ($45)");
+            }
+          },
+          {
+            label: "🚨 Enviar Transacción Sospechosa ($15,000 Extranjero)",
+            accion: () => {
+              runExpertSystemSim('fraude');
+              narrarAccion("Enviando transacción de 15,000 dólares desde el extranjero: ambas condiciones del antecedente se cumplen. El motor de inferencia dispara la regla en rojo y ejecuta la acción: Bloquear tarjeta de inmediato.", "¡REGLA DISPARADA! Fraude detectado ➔ Tarjeta Bloqueada");
+            }
+          }
+        ]
+      },
+
+      {
+        id: 13,
+        tema: "Tema 4: Conocimiento",
+        categoria: "Conocimiento",
+        icono: "fa-cubes",
+        titulo: "Marcos Conceptuales (Frames) y Estructuras de Ranuras",
+        definicion: "Propuestos por Marvin Minsky, los Frames representan objetos o situaciones estereotipadas mediante una colección de atributos llamados ranuras (slots), que admiten valores por defecto, herencia jerárquica (relación Es-Un) y procedimientos automáticos.",
+        formula: "Frame(Deportivo) ⊂ Frame(Automóvil) = { Ruedas: 4 [Default], Motor: V8 [Override] }",
+        explicacionFormula: "El marco Deportivo es una subclase de Automóvil. Por herencia automática recibe el slot Ruedas con valor por defecto igual a cuatro, pero sobrescribe el slot Motor sustituyendo el valor estándar por un motor V ocho.",
+        ejemplo: "Modelo 3D de un vehículo donde las 4 ruedas se heredan automáticamente de la clase padre 'Automóvil' y el bloque de motor central se personaliza.",
+        setup3D: setupConcept13,
+        secuencia: [
+          {
+            fase: "1. Estructura de Slots y Herencia",
+            card: "cardTheory",
+            log: "Frame Padre: Automóvil | Slots: [Ruedas=4 (por defecto), Motor=Estándar].",
+            voz: "Concepto 14: Marcos conceptuales o Frames. Observa el chasis 3D del vehículo con etiquetas sobre sus ranuras o slots: hereda cuatro ruedas por defecto de la clase general Automóvil."
+          },
+          {
+            fase: "2. Sobrescritura (Override) de Ranura",
+            card: "cardInteractive",
+            log: "Instanciando Sub-Frame 'Deportivo': Hereda 4 ruedas y sobrescribe Motor = V8 Turbo.",
+            voz: "Al instanciar un automóvil deportivo, conservamos las cuatro ruedas heredadas en verde, pero sobrescribimos la ranura del motor central en dorado con un propulsor V ocho.",
+            accion: () => customizeCarFrame('V8')
+          }
+        ],
+        controles: [
+          {
+            label: "🚗 Inspeccionar Herencia por Defecto (4 Ruedas)",
+            accion: () => {
+              customizeCarFrame('default');
+              narrarAccion("Inspeccionando herencia de marcos: aunque no especifiquemos cuántas ruedas tiene este coche, el sistema consulta el marco padre Automóvil y asigna el valor por defecto igual a 4 ruedas en color verde.", "Herencia Activa: Slot Ruedas = 4 (Valor por defecto)");
+            }
+          },
+          {
+            label: "⚡ Sobrescribir Slot Motor a 'Eléctrico Dual'",
+            accion: () => {
+              customizeCarFrame('electrico');
+              narrarAccion("Has modificado la ranura Motor de la instancia actual: el valor heredado se sobrescribe localmente por 'Motor Eléctrico Dual' iluminado en azul brillante, manteniendo intactas las demás propiedades.", "Override de Slot: Motor = Eléctrico Dual (Instancia actualizada)");
+            }
+          }
+        ]
+      },
+
+      {
+        id: 14,
+        tema: "Tema 4: Conocimiento",
+        categoria: "Conocimiento",
+        icono: "fa-share-nodes",
+        titulo: "Redes Semánticas y Grafos de Conocimiento",
+        definicion: "Representan el conocimiento mediante un grafo donde los nodos son conceptos o entidades del mundo y las aristas dirigidas llevan etiquetas semánticas (como 'es_autor_de', 'nació_en', 'es_una') formando tripletas Sujeto-Predicado-Objeto.",
+        formula: "Tripleta Semántica: ⟨ Sujeto, Predicado, Objeto ⟩   ∈   V × Relaciones × V",
+        explicacionFormula: "Cada enlace de conocimiento se formaliza como una tripleta ordenada de tres elementos: la entidad origen o Sujeto, la arista relacional con significado llamada Predicado, y la entidad destino llamada Objeto.",
+        ejemplo: "Grafo de Conocimiento literario: conecta [Miguel de Cervantes] —(es_autor_de)→ [Don Quijote] —(es_una)→ [Novela] —(publicada_en)→ [Siglo XVII].",
+        setup3D: setupConcept14,
+        secuencia: [
+          {
+            fase: "1. Topología de Red Semántica",
+            card: "cardTheory",
+            log: "4 Entidades conectadas por relaciones dirigidas (Sujeto ➔ Predicado ➔ Objeto).",
+            voz: "Concepto 15: Redes semánticas y grafos de conocimiento. Cada esfera en el espacio 3D es una entidad cultural y cada línea que las une tiene un predicado que define su relación."
+          },
+          {
+            fase: "2. Navegación por Tripletas",
+            card: "cardInteractive",
+            log: "Inferencia en Grafo: Cervantes ➔ [autor_de] ➔ Quijote ➔ [obra_del] ➔ Siglo XVII.",
+            voz: "Siguiendo los enlaces semánticos desde Cervantes hasta Don Quijote y de ahí al nodo Siglo diecisiete, el grafo responde consultas complejas relacionando autor, obra y época histórica.",
+            accion: () => traverseSemanticGraph()
+          }
+        ],
+        controles: [
+          {
+            label: "🔍 Consultar Tripleta: ¿Quién escribió El Quijote?",
+            accion: () => {
+              highlightTriple(0, 1);
+              narrarAccion("Consultando tripleta en el grafo: Sujeto Miguel de Cervantes, Predicado es autor de, Objeto Don Quijote. Los dos nodos involucrados se iluminan confirmando la relación directa.", "Tripleta: ⟨Cervantes, es_autor_de, Don Quijote⟩");
+            }
+          },
+          {
+            label: "🌐 Recorrer Camino Semántico Completo (inferencia)",
+            accion: () => {
+              traverseSemanticGraph();
+              narrarAccion("Recorriendo el grafo por transitividad semántica: si Cervantes es autor del Quijote, y el Quijote es una novela publicada en el Siglo diecisiete, el sistema infiere que Cervantes es un novelista del Siglo diecisiete.", "Inferencia Semántica: Cervantes ➔ Autor del Siglo XVII");
+            }
+          }
+        ]
+      },
+
+      {
+        id: 15,
+        tema: "Tema 4: Conocimiento",
+        categoria: "Conocimiento",
+        icono: "fa-chart-pie",
+        titulo: "Lógica de la Incertidumbre y Toma de Decisiones Probabilística",
+        definicion: "Permite a la IA razonar cuando la información es incompleta, ruidosa o contradictoria. En lugar de verdadero/falso absolutos, asigna grados de creencia numéricos actualizados mediante el Teorema de Bayes y distribuciones de probabilidad.",
+        formula: "P(H | E) = [ P(E | H) · P(H) ] / P(E)   |   Densidad Gaussiana N(μ, σ²)",
+        explicacionFormula: "El Teorema de Bayes calcula la probabilidad a posteriori de una hipótesis H dado que observamos la evidencia E: multiplica la verosimilitud P de E dado H por la probabilidad previa P de H, dividido entre la probabilidad marginal de la evidencia.",
+        ejemplo: "Sensor industrial en una turbina: modela la incertidumbre mediante una campana de Gauss 3D donde la altura central indica la certeza y el ancho la varianza del ruido.",
+        setup3D: setupConcept15,
+        secuencia: [
+          {
+            fase: "1. Distribución de Incertidumbre",
+            card: "cardTheory",
+            log: "Campana de Gauss 3D: Media μ=0, Desviación σ alta (Lectura con ruido).",
+            voz: "Concepto 16: Lógica de la incertidumbre. La campana tridimensional translúcida representa la distribución de probabilidad de las lecturas de un sensor industrial con ruido."
+          },
+          {
+            fase: "2. Fusión de Evidencia y Reducción de Varianza",
+            card: "cardInteractive",
+            log: "Aplicando Teorema de Bayes con 2º sensor ➔ Certeza sube al 96.4% (Campana estrecha).",
+            voz: "Al incorporar nueva evidencia mediante la fórmula de Bayes, la varianza se reduce: la campana se vuelve más alta, estrecha y verde, elevando la certeza diagnóstica al noventa y seis punto cuatro por ciento.",
+            accion: () => adjustGaussianUncertainty('alta_certeza')
+          }
+        ],
+        controles: [
+          {
+            label: "📡 Simular Sensor Ruidoso (Alta Incertidumbre σ)",
+            accion: () => {
+              adjustGaussianUncertainty('ruido');
+              narrarAccion("Simulando sensor con interferencias: la desviación estándar sigma aumenta, haciendo que la campana 3D se achate y se ensanche en color ámbar. La certeza cae al 52 por ciento.", "Incertidumbre Alta: σ = 1.8 | Confianza = 52.0%");
+            }
+          },
+          {
+            label: "🎯 Actualizar con Evidencia Bayesiana (Alta Certeza)",
+            accion: () => {
+              adjustGaussianUncertainty('alta_certeza');
+              narrarAccion("Actualizando probabilidades con el Teorema de Bayes tras cruzar dos sensores independientes: la distribución se estrecha en torno a la media y la probabilidad a posteriori alcanza el 96.4 por ciento.", "Resultado Bayesiano: σ = 0.4 | Certeza P(H|E) = 96.4%");
+            }
+          }
+        ]
+      },
+
+      {
+        id: 16,
+        tema: "Tema 4: Conocimiento",
+        categoria: "Conocimiento",
+        icono: "fa-circle-nodes",
+        titulo: "Redes Bayesianas y Propagación de Creencias",
+        definicion: "Grafo Acíclico Dirigido (DAG) donde cada nodo es una variable aleatoria y las flechas representan influencias causales directas cuantificadas mediante Tablas de Probabilidad Condicional (CPT).",
+        formula: "P(X₁, X₂, ..., Xₙ) = ∏ P( Xᵢ | Padres(Xᵢ) )",
+        explicacionFormula: "La distribución de probabilidad conjunta de todas las variables de la red es igual al producto de la probabilidad local de cada nodo X sub i condicionada únicamente por sus nodos padres directos en el grafo.",
+        ejemplo: "Red causal clásica: tanto 'Lluvia' como 'Rociador Encendido' son padres causales de 'Césped Mojado'. Observar el césped mojado actualiza la probabilidad de ambas causas.",
+        setup3D: setupConcept16,
+        secuencia: [
+          {
+            fase: "1. Grafo Causal (DAG)",
+            card: "cardTheory",
+            log: "Nodos Padres: Lluvia P(L)=20%, Rociador P(R)=30% ➔ Hijo: Césped Mojado.",
+            voz: "Concepto 17: Redes Bayesianas. Observa los tres nodos causales: arriba a la izquierda Lluvia con veinte por ciento de probabilidad previa, a la derecha Rociador con treinta por ciento, y abajo el efecto Césped Mojado."
+          },
+          {
+            fase: "2. Inferencia Diagnóstica (Efecto a Causa)",
+            card: "cardInteractive",
+            log: "Evidencia: Césped Mojado = SÍ (100%) ➔ P(Lluvia | Mojado) sube a 70.8%.",
+            voz: "Cuando observamos que el césped está mojado, la creencia se propaga hacia arriba: la probabilidad de que haya llovido salta del veinte al setenta punto ocho por ciento.",
+            accion: () => updateBayesNetwork('mojado')
+          }
+        ],
+        controles: [
+          {
+            label: "💧 Observar Evidencia: 'Césped Mojado = SÍ'",
+            accion: () => {
+              updateBayesNetwork('mojado');
+              narrarAccion("Has fijado la evidencia en el nodo hijo: el césped está mojado al 100 por ciento. Por propagación bayesiana inversa, la probabilidad de Lluvia sube al 70.8 por ciento y la del Rociador al 43.2 por ciento.", "Inferencia Diagnóstica: P(Lluvia | Mojado) = 70.8%");
+            }
+          },
+          {
+            label: "☀️ Observar Explicación Alternativa: 'Rociador = ENCENDIDO'",
+            accion: () => {
+              updateBayesNetwork('rociador');
+              narrarAccion("Efecto Explaining Away: al confirmar que el rociador automático estaba encendido, esto explica por qué el césped está mojado, haciendo que la probabilidad necesaria de Lluvia baje de nuevo al 28 por ciento.", "Explaining Away: Rociador=100% ➔ P(Lluvia) baja a 28.0%");
+            }
+          }
+        ]
+      },
+
+      {
+        id: 17,
+        tema: "Tema 4: Conocimiento",
+        categoria: "Conocimiento",
+        icono: "fa-water",
+        titulo: "Lógica Borrosa (Fuzzy Logic) y Sistemas Adaptativos",
+        definicion: "Reemplaza la lógica binaria estricta (0 o 1) por funciones de pertenencia continuas entre 0 y 1, permitiendo razonar con términos lingüísticos humanos como 'Fresco', 'Templado' o 'Muy Caliente' para controlar máquinas sin saltos bruscos.",
+        formula: "μ_A(x) ∈ [0, 1]   |   Salida Centroide: z* = ( ∫ z · μ(z) dz ) / ( ∫ μ(z) dz )",
+        explicacionFormula: "Mu sub A de x representa el grado de pertenencia difusa del valor x al conjunto lingüístico A, variando suavemente entre cero y uno. Al final, el método del centroide calcula el centro de gravedad para obtener una potencia exacta de control.",
+        ejemplo: "Climatizador inteligente 3D: ajusta de forma progresiva la velocidad de giro de las aspas según los grados de pertenencia a Frío, Templado y Caliente.",
+        setup3D: setupConcept17,
+        secuencia: [
+          {
+            fase: "1. Conjuntos Difusos [0, 1]",
+            card: "cardTheory",
+            log: "Funciones de pertenencia: Azul (Frío), Ámbar (Templado), Rojo (Caliente).",
+            voz: "Concepto 18: Lógica Borrosa o Fuzzy Logic. En la escena vemos una turbina de climatización y tres barras que miden el grado de pertenencia entre cero y uno a los conjuntos Frío, Templado y Caliente."
+          },
+          {
+            fase: "2. Inferencia Difusa y Defusificación",
+            card: "cardInteractive",
+            log: "Temp = 27°C: μ_Templado=0.6, μ_Caliente=0.4 ➔ Potencia Motor = 58%.",
+            voz: "A veintisiete grados no hace ni frío ni calor extremo: pertenece cero punto seis a templado y cero punto cuatro a caliente. El cálculo del centroide regula las aspas suavemente al cincuenta y ocho por ciento de potencia.",
+            accion: () => setFuzzyTemperature(27)
+          }
+        ],
+        controles: [
+          {
+            label: "❄️ Fijar 16°C (Conjunto Frío: μ = 0.95)",
+            accion: () => {
+              setFuzzyTemperature(16);
+              narrarAccion("Temperatura fijada en 16 grados: la pertenencia al conjunto Frío es 0.95. Tras defusificar por centroide, el compresor reduce la velocidad del ventilador al 12 por ciento para ahorrar energía.", "16°C: μ_Frío=0.95, μ_Templado=0.05 ➔ Ventilador al 12%");
+            }
+          },
+          {
+            label: "🌤️ Fijar 27°C (Transición Templado/Caliente)",
+            accion: () => {
+              setFuzzyTemperature(27);
+              narrarAccion("Temperatura intermedia de 27 grados: activa simultáneamente los conjuntos Templado con 0.6 y Caliente con 0.4. El resultado pondera ambas reglas girando el ventilador al 58 por ciento.", "27°C: μ_Templado=0.60, μ_Caliente=0.40 ➔ Ventilador al 58%");
+            }
+          },
+          {
+            label: "🔥 Fijar 38°C (Conjunto Muy Caliente: μ = 1.0)",
+            accion: () => {
+              setFuzzyTemperature(38);
+              narrarAccion("Temperatura de 38 grados: pertenencia total igual a 1.0 en el conjunto Muy Caliente. Las aspas del modelo 3D se ponen rojas y aceleran al 100 por ciento de su capacidad.", "38°C: μ_Caliente=1.00 ➔ Ventilador a Potencia Máxima 100%");
+            }
+          }
+        ]
+      },
+
+      {
+        id: 18,
+        tema: "Tema 4: Conocimiento",
+        categoria: "Conocimiento",
+        icono: "fa-globe",
+        titulo: "Ontologías y Web Semántica",
+        definicion: "Vocabularios formales y estandarizados (escritos en lenguajes W3C como OWL y RDF) que definen jerarquías de clases, propiedades y axiomas de un dominio para que sistemas informáticos de todo el mundo interoperen comprendiendo el significado de los datos.",
+        formula: "Ontología O = ⟨ Clases C, Propiedades P, Instancias I, Axiomas OWL-DL ⟩",
+        explicacionFormula: "Una ontología formal O define el conjunto de conceptos o Clases C organizados en taxonomía, las Propiedades relacionales P, los individuos concretos I y los axiomas lógicos descriptivos que un razonador automático verifica.",
+        ejemplo: "Ontología médica global SNOMED-CT: estandariza el nodo central 'Patología Clínica' y sus subclases ('Cardiopatía', 'Neumonía', 'Traumatismo') entre hospitales de distintos países.",
+        setup3D: setupConcept18,
+        secuencia: [
+          {
+            fase: "1. Taxonomía Formal OWL",
+            card: "cardTheory",
+            log: "Clase Raíz: SNOMED_Concept ➔ 6 Subclases Clínicas con URIs universales.",
+            voz: "Concepto 19: Ontologías y Web Semántica. Esta constelación tridimensional representa la ontología médica global SNOMED CT, donde la esfera central define la superclase Patología y las esferas orbitales sus subclases formales."
+          },
+          {
+            fase: "2. Razonador Semántico e Interoperabilidad",
+            card: "cardInteractive",
+            log: "Razonador OWL-DL ejecutado: 0 inconsistencias | Interoperabilidad Web 100%.",
+            voz: "Al ejecutar el razonador ontológico OWL, el sistema valida los axiomas de subclase y permite que dos hospitales en distintos idiomas compartan el mismo código clínico sin ambigüedad.",
+            accion: () => runOntologyReasoner()
+          }
+        ],
+        controles: [
+          {
+            label: "🌐 Ejecutar Razonador OWL-DL (Validar Consistencia)",
+            accion: () => {
+              runOntologyReasoner();
+              narrarAccion("Ejecutando razonador automático OWL Description Logic: se han comprobado todas las relaciones de subclase y disyunción en la ontología. Resultado: ontología consistente y lista para interoperar en la Web Semántica.", "Razonador OWL-DL: Consistencia Validada (100% Interoperable)");
+            }
+          }
+        ]
+      }
+    ];
+
+    /* =========================================================================
+       VARIABLES DE ESTADO DEL MOTOR NARRATIVO Y DE SECUENCIA
+       ========================================================================= */
+    let currentConceptIndex = 0;
+    let currentStepIndex = 0;
+    let isSimRunning = false;
+    let isMuted = false;
+    let animSpeedMultiplier = 1.0;
+    let speechSynth = window.speechSynthesis;
+    let sequenceTimeout = null;
+
+    /* =========================================================================
+       INICIALIZACIÓN DE LA APLICACIÓN Y THREE.JS
+       ========================================================================= */
+    window.addEventListener('DOMContentLoaded', () => {
+      initThreeJS();
+      renderConceptMenu();
+      loadConcept(0);
+      setupGlobalEventListeners();
+    });
+
+    function initThreeJS() {
+      const container = document.querySelector('.viewport-container');
+      const canvas = document.getElementById('threejs-canvas');
+      
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xf1f5f9);
+
+      camera = new THREE.PerspectiveCamera(42, container.clientWidth / container.clientHeight, 0.1, 1000);
+      camera.position.set(11, 9, 13);
+
+      renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.06;
+      controls.maxPolarAngle = Math.PI / 2 + 0.05;
+
+      // Iluminación clara de laboratorio
+      scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+      dirLight.position.set(15, 25, 18);
+      dirLight.castShadow = true;
+      scene.add(dirLight);
+
+      const fillLight = new THREE.DirectionalLight(0xbae6fd, 0.45);
+      fillLight.position.set(-15, 10, -12);
+      scene.add(fillLight);
+
+      const grid = new THREE.GridHelper(24, 24, 0x94a3b8, 0xe2e8f0);
+      grid.position.y = -0.02;
+      scene.add(grid);
+
+      window.addEventListener('resize', () => {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+      });
+
+      animateLoop();
+    }
+
+    function animateLoop() {
+      requestAnimationFrame(animateLoop);
+      controls.update();
+
+      // Ejecutar animaciones continuas registradas por el concepto activo
+      const now = performance.now() * 0.001;
+      activeAnimations.forEach(fn => fn(now));
+
+      renderer.render(scene, camera);
+    }
+
+    /* =========================================================================
+       MENÚ Y CARGA DE CADA CONCEPTO
+       ========================================================================= */
+    function renderConceptMenu() {
+      const listContainer = document.getElementById('conceptListContainer');
+      listContainer.innerHTML = '';
+
+      CONCEPTO_DATA.forEach((c, index) => {
+        const item = document.createElement('div');
+        item.className = `concept-item d-flex align-items-center gap-2 ${index === 0 ? 'active' : ''}`;
+        item.id = `concept-btn-${index}`;
+        item.onclick = () => loadConcept(index);
+
+        item.innerHTML = `
+          <i class="fa-solid ${c.icono} text-primary" style="width: 20px;"></i>
+          <div class="flex-grow-1 text-truncate">
+            <div class="small fw-semibold text-truncate">${index + 1}. ${c.titulo}</div>
+            <span class="badge ${c.tema.includes('Tema 3') ? 'bg-info text-dark' : 'bg-primary'} text-white" style="font-size:0.63rem;">
+              ${c.tema}
+            </span>
+          </div>
+        `;
+        listContainer.appendChild(item);
+      });
+    }
+
+    function loadConcept(index) {
+      stopAllAudioAndSim();
+
+      currentConceptIndex = index;
+      currentStepIndex = 0;
+
+      document.querySelectorAll('.concept-item').forEach(el => el.classList.remove('active'));
+      const activeBtn = document.getElementById(`concept-btn-${index}`);
+      if (activeBtn) {
+        activeBtn.classList.add('active');
+        activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+      const c = CONCEPTO_DATA[index];
+
+      // Poblar textos teóricos y explicativos
+      document.getElementById('conceptCounter').innerText = `${index + 1} / 19`;
+      document.getElementById('hudTopicCategory').innerHTML = `<i class="fa-solid ${c.icono} text-primary"></i> ${index + 1}. ${c.titulo}`;
+      document.getElementById('hudStepBadge').innerText = `Fase: Escenario Inicial`;
+      document.getElementById('detDescription').innerText = c.definicion;
+      document.getElementById('detFormula').innerText = c.formula;
+      document.getElementById('detFormulaExplain').innerText = `💡 Explicación de la fórmula: ${c.explicacionFormula}`;
+      document.getElementById('detExample').innerText = c.ejemplo;
+      document.getElementById('simStepLog').innerText = "Modelo 3D inicializado. Pulsa 'Explicar Todo y Simular 3D' o usa los botones interactivos.";
+      document.getElementById('simMetricBadge').innerText = "En espera";
+      document.getElementById('txtSubtitles').innerHTML = `Concepto cargado: <strong>${c.titulo}</strong>. Haz clic en iniciar o prueba los botones interactivos de abajo.`;
+
+      clearHighlights();
+      clearDynamicMeshes();
+
+      // Cámara óptima por defecto
+      camera.position.set(11, 8.5, 13);
+      controls.target.set(0, 1, 0);
+      controls.autoRotate = false;
+      controls.update();
+
+      // Construir botones interactivos específicos del concepto
+      renderCustomControls(c.controles);
+
+      // Construir modelo 3D
+      c.setup3D();
+    }
+
+    function renderCustomControls(controles) {
+      const container = document.getElementById('dynamicCustomControls');
+      container.innerHTML = '';
+      if (!controles || controles.length === 0) return;
+
+      controles.forEach(ctrl => {
+        const btn = document.createElement('button');
+        btn.className = "btn btn-outline-primary btn-sm text-start fw-semibold d-flex justify-content-between align-items-center";
+        btn.innerHTML = `<span>${ctrl.label}</span> <i class="fa-solid fa-volume-high small ms-2"></i>`;
+        btn.onclick = () => {
+          stopAllAudioAndSim();
+          ctrl.accion();
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function clearDynamicMeshes() {
+      activeAnimations = [];
+      dynamicMeshes.forEach(mesh => {
+        scene.remove(mesh);
+        if (mesh.geometry) mesh.geometry.dispose();
+        if (mesh.material) {
+          if (Array.isArray(mesh.material)) mesh.material.forEach(m => m.dispose());
+          else mesh.material.dispose();
+        }
+      });
+      dynamicMeshes = [];
+    }
+
+    function clearHighlights() {
+      document.getElementById('cardTheory').classList.remove('speaking-highlight');
+      document.getElementById('cardInteractive').classList.remove('speaking-highlight');
+      document.getElementById('detFormula').classList.remove('speaking-highlight');
+    }
+
+    /* =========================================================================
+       MOTOR DE SÍNTESIS DE VOZ Y SECUENCIA SINCRONIZADA
+       ========================================================================= */
+    function speakText(text, onEndCallback) {
+      document.getElementById('txtSubtitles').innerHTML = `<strong>Narrador:</strong> "${text}"`;
+
+      if (isMuted || !('speechSynthesis' in window)) {
+        document.getElementById('lblAudioStatus').innerHTML = `<i class="fa-solid fa-volume-xmark text-muted me-1"></i> Modo Silencio (Subtítulos)`;
+        if (onEndCallback) {
+          sequenceTimeout = setTimeout(onEndCallback, 2800 / animSpeedMultiplier);
+        }
+        return;
+      }
+
+      speechSynth.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'es-ES';
+      utterance.rate = 1.02 * animSpeedMultiplier;
+      utterance.pitch = 1.0;
+
+      const voices = speechSynth.getVoices();
+      const bestVoice = voices.find(v => v.lang.startsWith('es') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Sabina') || v.name.includes('Helena') || v.name.includes('Mexico') || v.name.includes('Spain'))) || voices.find(v => v.lang.startsWith('es'));
+      if (bestVoice) utterance.voice = bestVoice;
+
+      const indicator = document.getElementById('voiceIndicator');
+
+      utterance.onstart = () => {
+        indicator.classList.remove('d-none');
+        document.getElementById('lblAudioStatus').innerHTML = `<i class="fa-solid fa-waveform-lines text-primary me-1"></i> Narrando en tiempo real...`;
+      };
+
+      utterance.onend = () => {
+        indicator.classList.add('d-none');
+        document.getElementById('lblAudioStatus').innerHTML = `<i class="fa-solid fa-check text-success me-1"></i> Explicación lista`;
+        if (onEndCallback) onEndCallback();
+      };
+
+      utterance.onerror = () => {
+        indicator.classList.add('d-none');
+        if (onEndCallback) onEndCallback();
+      };
+
+      speechSynth.speak(utterance);
+    }
+
+    // Narrar una acción interactiva disparada por un botón del usuario
+    function narrarAccion(textoHablado, textoLog) {
+      clearHighlights();
+      document.getElementById('cardInteractive').classList.add('speaking-highlight');
+      document.getElementById('simStepLog').innerText = textoLog;
+      document.getElementById('simMetricBadge').innerText = "Interacción en vivo";
+      document.getElementById('hudStepBadge').innerText = "Modo Interactivo";
+      speakText(textoHablado, () => {
+        clearHighlights();
+      });
+    }
+
+    // Narrar específicamente Definición, Fórmula o Ejemplo cuando el usuario pulsa el botón de altavoz
+    window.narrarApartado = function(tipo) {
+      stopAllAudioAndSim();
+      const c = CONCEPTO_DATA[currentConceptIndex];
+      clearHighlights();
+
+      if (tipo === 'definicion') {
+        document.getElementById('cardTheory').classList.add('speaking-highlight');
+        speakText(`Definición de ${c.titulo}: ${c.definicion}`, clearHighlights);
+      } else if (tipo === 'formula') {
+        document.getElementById('detFormula').classList.add('speaking-highlight');
+        speakText(`Explicación matemática de la fórmula: ${c.explicacionFormula}`, clearHighlights);
+      } else if (tipo === 'ejemplo') {
+        document.getElementById('cardInteractive').classList.add('speaking-highlight');
+        speakText(`Caso de aplicación real: ${c.ejemplo}`, clearHighlights);
+      }
+    };
+
+    // Ejecuta toda la secuencia automática sincronizando cada paso de voz con cada cambio 3D
+    function runFullNarratedSequence() {
+      stopAllAudioAndSim();
+      isSimRunning = true;
+      currentStepIndex = 0;
+      document.getElementById('btnPlaySim').disabled = true;
+
+      const c = CONCEPTO_DATA[currentConceptIndex];
+
+      // Construimos una cola completa que incluye la explicación de la fórmula y todos los pasos 3D
+      const pasos = [
+        ...c.secuencia.slice(0, 1),
+        {
+          fase: "Desglose de la Fórmula",
+          card: "formula",
+          log: `Fórmula activa: ${c.formula}`,
+          voz: c.explicacionFormula
+        },
+        ...c.secuencia.slice(1)
+      ];
+
+      function ejecutarPaso(idx) {
+        if (!isSimRunning || idx >= pasos.length) {
+          isSimRunning = false;
+          document.getElementById('btnPlaySim').disabled = false;
+          document.getElementById('simMetricBadge').innerText = "Completado";
+          clearHighlights();
+          return;
+        }
+
+        const paso = pasos[idx];
+        clearHighlights();
+        if (paso.card === 'formula') {
+          document.getElementById('detFormula').classList.add('speaking-highlight');
+        } else if (paso.card) {
+          document.getElementById(paso.card).classList.add('speaking-highlight');
+        }
+
+        document.getElementById('hudStepBadge').innerText = paso.fase;
+        document.getElementById('simStepLog').innerText = paso.log;
+        document.getElementById('simMetricBadge').innerText = `Paso ${idx + 1}/${pasos.length}`;
+
+        // Ejecutar transformación 3D asociada a este paso
+        if (paso.accion) paso.accion();
+
+        // Narrar y al terminar pasar automáticamente al siguiente paso
+        speakText(paso.voz, () => {
+          if (isSimRunning) {
+            sequenceTimeout = setTimeout(() => ejecutarPaso(idx + 1), 350);
+          }
+        });
+      }
+
+      ejecutarPaso(0);
+    }
+
+    // Avanzar un solo paso manualmente con narración
+    function runSingleManualStep() {
+      stopAllAudioAndSim();
+      const c = CONCEPTO_DATA[currentConceptIndex];
+      const pasos = c.secuencia;
+      if (currentStepIndex >= pasos.length) currentStepIndex = 0;
+
+      const paso = pasos[currentStepIndex];
+      clearHighlights();
+      if (paso.card) document.getElementById(paso.card).classList.add('speaking-highlight');
+
+      document.getElementById('hudStepBadge').innerText = paso.fase;
+      document.getElementById('simStepLog').innerText = paso.log;
+      document.getElementById('simMetricBadge').innerText = `Paso Manual ${currentStepIndex + 1}/${pasos.length}`;
+
+      if (paso.accion) paso.accion();
+      speakText(paso.voz, clearHighlights);
+
+      currentStepIndex = (currentStepIndex + 1) % pasos.length;
+    }
+
+    function stopAllAudioAndSim() {
+      isSimRunning = false;
+      if (sequenceTimeout) {
+        clearTimeout(sequenceTimeout);
+        sequenceTimeout = null;
+      }
+      if ('speechSynthesis' in window) {
+        speechSynth.cancel();
+      }
+      document.getElementById('voiceIndicator').classList.add('d-none');
+      document.getElementById('btnPlaySim').disabled = false;
+      clearHighlights();
+    }
+
+    function setupGlobalEventListeners() {
+      document.getElementById('btnPlaySim').onclick = runFullNarratedSequence;
+      document.getElementById('btnNextStepManual').onclick = runSingleManualStep;
+      document.getElementById('btnPauseSim').onclick = stopAllAudioAndSim;
+      document.getElementById('btnResetSim').onclick = () => loadConcept(currentConceptIndex);
+
+      document.getElementById('btnPrevConcept').onclick = () => {
+        if (currentConceptIndex > 0) loadConcept(currentConceptIndex - 1);
+      };
+      document.getElementById('btnNextConcept').onclick = () => {
+        if (currentConceptIndex < CONCEPTO_DATA.length - 1) loadConcept(currentConceptIndex + 1);
+      };
+
+      document.getElementById('btnResetCamera').onclick = () => {
+        camera.position.set(11, 8.5, 13);
+        controls.target.set(0, 1, 0);
+        controls.update();
+      };
+
+      document.getElementById('btnToggleRotate').onclick = () => {
+        controls.autoRotate = !controls.autoRotate;
+      };
+
+      document.getElementById('simSpeed').onchange = (e) => {
+        animSpeedMultiplier = parseFloat(e.target.value);
+      };
+
+      document.getElementById('btnMuteToggle').onclick = () => {
+        isMuted = !isMuted;
+        const icon = document.getElementById('iconMute');
+        icon.className = isMuted ? 'fa-solid fa-volume-xmark text-danger' : 'fa-solid fa-volume-high';
+        if (isMuted) speechSynth.cancel();
+      };
+    }
+
+    /* =========================================================================
+       ESCENARIOS 3D MEJORADOS PARA LOS 19 CONCEPTOS
+       ========================================================================= */
+
+    // --- CONCEPTO 0: Laberinto y Formulación ---
+    window.mazeCoords = [[-4,-4], [-4,-2], [-4,2], [-4,4], [-2,4], [0,4], [2,4], [4,4]];
+    window.mazeIdx = 0;
+    let mazeAgentMesh, mazeAgentLabel;
+
+    function setupConcept0() {
+      window.mazeIdx = 0;
+      const floor = register3D(new THREE.Mesh(new THREE.BoxGeometry(10.5, 0.3, 10.5), new THREE.MeshStandardMaterial({ color: 0xffffff })));
+      floor.position.y = -0.15;
+
+      const wallMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.4 });
+      [[-4,0],[-2,-2],[-2,0],[-2,2],[0,2],[2,0],[2,-2],[2,2],[0,-2]].forEach(([x, z]) => {
+        const w = register3D(new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.3, 1.8), wallMat));
+        w.position.set(x, 0.65, z);
+      });
+
+      // Inicio S0 y Meta G(s)
+      createLabel3D("Inicio S₀ (-4,-4)", -4, 1.8, -4, "#0284c7");
+      const goal = register3D(new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.4, 24), new THREE.MeshStandardMaterial({ color: 0xeab308, emissive: 0xca8a04, emissiveIntensity: 0.3 })));
+      goal.position.set(4, 0.2, 4);
+      createLabel3D("Meta G(s) (4,4)", 4, 1.8, 4, "#16a34a");
+
+      // Agente
+      mazeAgentMesh = register3D(new THREE.Mesh(new THREE.SphereGeometry(0.55, 32, 32), new THREE.MeshStandardMaterial({ color: 0x2563eb })));
+      mazeAgentMesh.position.set(-4, 0.55, -4);
+      mazeAgentLabel = createLabel3D("Agente | c=0", -4, 2.8, -4, "#2563eb");
+    }
+
+    function moveMazeAgent(targetIdx) {
+      window.mazeIdx = targetIdx;
+      const [x, z] = window.mazeCoords[targetIdx];
+      if (mazeAgentMesh) mazeAgentMesh.position.set(x, 0.55, z);
+      if (mazeAgentLabel) {
+        mazeAgentLabel.position.set(x, 2.8, z);
+        updateLabel3D(mazeAgentLabel, `Agente (${x},${z}) | c=${targetIdx}`, targetIdx === 7 ? "#16a34a" : "#2563eb");
+      }
+    }
+
+    // --- CONCEPTO 1: Espacios de Estados (Grafo Ciudades) ---
+    let cityMeshes = [], cityEdges = [];
+    function setupConcept1() {
+      cityMeshes = []; cityEdges = [];
+      const cities = [
+        { name: "Madrid (S₀)", x: -5, z: 1, col: 0x2563eb },
+        { name: "Zaragoza", x: -0.5, z: 4, col: 0x64748b },
+        { name: "Valencia", x: 1, z: 0.5, col: 0x64748b },
+        { name: "Barcelona (Meta)", x: 5, z: 3.5, col: 0x16a34a },
+        { name: "Sevilla", x: -3.5, z: -4, col: 0x64748b },
+        { name: "Granada", x: 1.5, z: -3.5, col: 0x64748b }
+      ];
+
+      cities.forEach(c => {
+        const sp = register3D(new THREE.Mesh(new THREE.SphereGeometry(0.65, 24, 24), new THREE.MeshStandardMaterial({ color: c.col })));
+        sp.position.set(c.x, 0.65, c.z);
+        cityMeshes.push(sp);
+        createLabel3D(c.name, c.x, 1.9, c.z, c.col === 0x16a34a ? "#16a34a" : "#1e293b", "#ffffff", 3.0);
+      });
+
+      const connections = [
+        [0,1,"315 km"], [1,3,"300 km"], [0,2,"350 km"], [2,3,"300 km"], [0,4,"530 km"], [4,5,"250 km"], [5,2,"340 km"]
+      ];
+      connections.forEach(([a, b, dist]) => {
+        const p1 = cityMeshes[a].position;
+        const p2 = cityMeshes[b].position;
+        const edge = createCylinderEdge(p1, p2, 0.08, 0xcbd5e1);
+        cityEdges.push({ a, b, mesh: edge });
+        const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+        createLabel3D(dist, mid.x, mid.y + 0.6, mid.z, "#475569", "#ffffff", 2.1);
+      });
+    }
+
+    function highlightCityPath(nodeIndices, hexColor) {
+      cityMeshes.forEach((m, i) => m.material.color.setHex(i === 0 ? 0x2563eb : (i === 3 ? 0x16a34a : 0x64748b)));
+      cityEdges.forEach(e => e.mesh.material.color.setHex(0xcbd5e1));
+
+      nodeIndices.forEach(idx => cityMeshes[idx].material.color.setHex(hexColor));
+      for (let i = 0; i < nodeIndices.length - 1; i++) {
+        const u = nodeIndices[i], v = nodeIndices[i+1];
+        const edge = cityEdges.find(e => (e.a === u && e.b === v) || (e.a === v && e.b === u));
+        if (edge) edge.mesh.material.color.setHex(hexColor);
+      }
+    }
+
+    // --- CONCEPTO 2: Estrategias / Algoritmo Genético ---
+    let gaTubes = [], gaLabel;
+    function setupConcept2() {
+      gaTubes = [];
+      createLabel3D("Origen", -6, 1.5, 0, "#2563eb", "#fff", 2.2);
+      createLabel3D("Destino", 6, 1.5, 0, "#16a34a", "#fff", 2.2);
+      gaLabel = createLabel3D("Población: 5 Rutas Candidatas", 0, 4.5, 0, "#1e293b", "#fff", 4.2);
+
+      const offsets = [-3.5, -1.8, 0, 1.8, 3.5];
+      offsets.forEach((zOff, i) => {
+        const height = i === 2 ? 0.3 : 1.5 + Math.abs(zOff) * 0.6;
+        const curve = new THREE.CatmullRomCurve3([
+          new THREE.Vector3(-6, 0.4, 0),
+          new THREE.Vector3(-2, height, zOff),
+          new THREE.Vector3(2, height, zOff * 0.8),
+          new THREE.Vector3(6, 0.4, 0)
+        ]);
+        const mat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.2 });
+        const tube = register3D(new THREE.Mesh(new THREE.TubeGeometry(curve, 32, i === 2 ? 0.22 : 0.12, 12, false), mat));
+        gaTubes.push(tube);
+      });
+    }
+
+    function evolveGeneration(stage) {
+      gaTubes.forEach((t, i) => {
+        if (i === 2) {
+          t.material.color.setHex(0x16a34a);
+          t.scale.set(1, 1, 1);
+        } else {
+          t.material.color.setHex(0xdc2626);
+          t.material.transparent = true;
+          t.material.opacity = stage >= 5 ? 0.2 : 0.75;
+        }
+      });
+      if (gaLabel) {
+        updateLabel3D(gaLabel, stage >= 5 ? "¡Convergencia! Ruta 3 (Fitness 98.7%)" : "Evaluando Fitness = 1 / Costo(Ruta)", "#16a34a");
+      }
+    }
+
+    // --- CONCEPTO 3: Búsqueda Ciega BFS vs DFS ---
+    let blindTreeNodes = [], blindModeLabel;
+    function setupConcept3() {
+      blindTreeNodes = [];
+      const coords = [
+        { name: "Raíz N0", x: 0, y: 5.2, z: 0 },
+        { name: "N1 (Niv 1)", x: -3.2, y: 2.8, z: 0 },
+        { name: "N2 (Niv 1)", x: 3.2, y: 2.8, z: 0 },
+        { name: "N3 (Hoja)", x: -4.8, y: 0.5, z: 0 },
+        { name: "N4 (Hoja)", x: -1.6, y: 0.5, z: 0 },
+        { name: "N5 (META)", x: 1.6, y: 0.5, z: 0 },
+        { name: "N6 (Hoja)", x: 4.8, y: 0.5, z: 0 }
+      ];
+
+      coords.forEach((c, i) => {
+        const sp = register3D(new THREE.Mesh(new THREE.SphereGeometry(0.55, 24, 24), new THREE.MeshStandardMaterial({ color: i === 5 ? 0x16a34a : 0x94a3b8 })));
+        sp.position.set(c.x, c.y, c.z);
+        blindTreeNodes.push(sp);
+        createLabel3D(c.name, c.x, c.y + 1.0, c.z, i === 5 ? "#16a34a" : "#334155", "#fff", 2.4);
+      });
+
+      [[0,1],[0,2],[1,3],[1,4],[2,5],[2,6]].forEach(([p, ch]) => {
+        createCylinderEdge(blindTreeNodes[p].position, blindTreeNodes[ch].position, 0.06, 0xcbd5e1);
+      });
+
+      blindModeLabel = createLabel3D("Selecciona BFS (Cola) o DFS (Pila)", 0, 6.8, 0, "#2563eb", "#fff", 4.5);
+    }
+
+    function runTreeSearchAnim(mode) {
+      blindTreeNodes.forEach((n, i) => n.material.color.setHex(i === 5 ? 0x16a34a : 0x94a3b8));
+      const order = mode === 'BFS' ? [0, 1, 2, 3, 4, 5] : [0, 1, 3, 4, 2, 5];
+      const color = mode === 'BFS' ? 0x2563eb : 0xd97706;
+      updateLabel3D(blindModeLabel, mode === 'BFS' ? "BFS (Cola FIFO): Explora por Niveles" : "DFS (Pila LIFO): Explora en Profundidad", mode === 'BFS' ? "#2563eb" : "#d97706");
+
+      order.forEach((nodeIdx, step) => {
+        setTimeout(() => {
+          if (blindTreeNodes[nodeIdx]) {
+            blindTreeNodes[nodeIdx].material.color.setHex(nodeIdx === 5 ? 0x16a34a : color);
+          }
+        }, step * 320);
+      });
+    }
+
+    // --- CONCEPTO 4: Búsqueda Heurística A* ---
+    let astarTiles = [], astarAgent, astarLineH, astarInfoLabel;
+    function setupConcept4() {
+      astarTiles = [];
+      for (let x = -3; x <= 3; x++) {
+        for (let z = -3; z <= 3; z++) {
+          const isWall = (x === 0 && z >= -1 && z <= 2);
+          const tile = register3D(new THREE.Mesh(
+            new THREE.BoxGeometry(0.9, isWall ? 1.2 : 0.2, 0.9),
+            new THREE.MeshStandardMaterial({ color: isWall ? 0xdc2626 : 0xffffff })
+          ));
+          tile.position.set(x, isWall ? 0.6 : 0, z);
+          tile.userData = { x, z, isWall };
+          astarTiles.push(tile);
+        }
+      }
+
+      astarAgent = register3D(new THREE.Mesh(new THREE.SphereGeometry(0.42, 24, 24), new THREE.MeshStandardMaterial({ color: 0x2563eb })));
+      astarAgent.position.set(-3, 0.45, -3);
+
+      const goal = register3D(new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.5, 24), new THREE.MeshStandardMaterial({ color: 0x16a34a })));
+      goal.position.set(3, 0.35, 3);
+      createLabel3D("Meta (3,3)", 3, 1.5, 3, "#16a34a", "#fff", 2.4);
+
+      // Vector Heurístico h(n) en línea recta
+      const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-3, 0.6, -3), new THREE.Vector3(3, 0.6, 3)]);
+      astarLineH = register3D(new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0xeab308, linewidth: 3 })));
+      astarInfoLabel = createLabel3D("f(n) = g(0) + h(12) = 12", -3, 2.0, -3, "#2563eb", "#fff", 3.8);
+    }
+
+    function runAStarAnim() {
+      const path = [[-3,-3],[-2,-3],[-1,-2],[0,-2],[1,-2],[2,-1],[3,0],[3,1],[3,3]];
+      path.forEach(([px, pz], idx) => {
+        setTimeout(() => {
+          const t = astarTiles.find(tile => tile.userData.x === px && tile.userData.z === pz);
+          if (t) t.material.color.setHex(0x38bdf8);
+          if (astarAgent) astarAgent.position.set(px, 0.45, pz);
+          const h = Math.abs(3 - px) + Math.abs(3 - pz);
+          if (astarInfoLabel) {
+            astarInfoLabel.position.set(px, 2.0, pz);
+            updateLabel3D(astarInfoLabel, `f(n) = g(${idx}) + h(${h}) = ${idx + h}`, idx === path.length - 1 ? "#16a34a" : "#0284c7");
+          }
+          if (astarLineH) {
+            astarLineH.geometry.setFromPoints([new THREE.Vector3(px, 0.6, pz), new THREE.Vector3(3, 0.6, 3)]);
+          }
+        }, idx * 280);
+      });
+    }
+
+    function moveAStarToMid() {
+      const px = 1, pz = -2;
+      if (astarAgent) astarAgent.position.set(px, 0.45, pz);
+      if (astarInfoLabel) {
+        astarInfoLabel.position.set(px, 2.0, pz);
+        updateLabel3D(astarInfoLabel, "f(n) = g(4) + h(7) = 11", "#d97706");
+      }
+      if (astarLineH) {
+        astarLineH.geometry.setFromPoints([new THREE.Vector3(px, 0.6, pz), new THREE.Vector3(3, 0.6, 3)]);
+      }
+    }
+
+    // --- CONCEPTO 5: Restricciones CSP ---
+    let cspCubes = [], cspLabels = [], cspStatusSprite;
+    function setupConcept5() {
+      cspCubes = []; cspLabels = [];
+      const pos = [
+        { name: "Aula X₁", x: -2.8, y: 2.2, z: 0 },
+        { name: "Aula X₂", x: 2.8, y: 2.2, z: 0 },
+        { name: "Aula X₃", x: 0, y: 0.6, z: 2.2 }
+      ];
+
+      pos.forEach(p => {
+        const c = register3D(new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.4, 1.4), new THREE.MeshStandardMaterial({ color: 0xdc2626 })));
+        c.position.set(p.x, p.y, p.z);
+        cspCubes.push(c);
+        cspLabels.push(createLabel3D(`${p.name}: 08:00 (Rojo)`, p.x, p.y + 1.4, p.z, "#dc2626", "#fff", 3.2));
+      });
+
+      [[0,1],[1,2],[2,0]].forEach(([a, b]) => {
+        createCylinderEdge(cspCubes[a].position, cspCubes[b].position, 0.08, 0x94a3b8);
+      });
+
+      cspStatusSprite = createLabel3D("⚠️ ¡Conflicto de Restricción X₁ = X₂ = X₃!", 0, 4.5, 0, "#dc2626", "#fff", 4.8);
+    }
+
+    function triggerCSPConflict() {
+      cspCubes.forEach((c, i) => {
+        c.material.color.setHex(0xdc2626);
+        updateLabel3D(cspLabels[i], `Aula X_${i+1}: 08:00 (Rojo)`, "#dc2626");
+      });
+      updateLabel3D(cspStatusSprite, "⚠️ ¡Conflicto! Violación Cᵢⱼ (Mismo Horario)", "#dc2626");
+    }
+
+    function resolveCSP3D() {
+      const colors = [0xdc2626, 0x16a34a, 0x2563eb];
+      const texts = ["Aula X₁: 08:00 (Rojo)", "Aula X₂: 10:00 (Verde)", "Aula X₃: 12:00 (Azul)"];
+      const bg = ["#dc2626", "#16a34a", "#2563eb"];
+      cspCubes.forEach((c, i) => {
+        c.material.color.setHex(colors[i]);
+        updateLabel3D(cspLabels[i], texts[i], bg[i]);
+      });
+      updateLabel3D(cspStatusSprite, "✅ Solución CSP Válida: 0 Colisiones", "#16a34a");
+    }
+
+    // --- CONCEPTO 6: Minimax y Poda Alfa-Beta ---
+    let mmNodes = [], mmPruneEdge, mmRootLabel, mmPruneLabel;
+    function setupConcept6() {
+      mmNodes = [];
+      const root = register3D(new THREE.Mesh(new THREE.ConeGeometry(0.65, 1.1, 4), new THREE.MeshStandardMaterial({ color: 0x2563eb })));
+      root.position.set(0, 4.2, 0);
+      mmRootLabel = createLabel3D("MAX (α = -∞)", 0, 5.4, 0, "#2563eb", "#fff", 3.0);
+
+      const minL = register3D(new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.0, 4), new THREE.MeshStandardMaterial({ color: 0xd97706 })));
+      minL.position.set(-3, 2.0, 0); minL.rotation.x = Math.PI;
+      createLabel3D("MIN Izq (5)", -3, 3.0, 0, "#d97706", "#fff", 2.5);
+
+      const minR = register3D(new THREE.Mesh(new THREE.ConeGeometry(0.55, 1.0, 4), new THREE.MeshStandardMaterial({ color: 0xd97706 })));
+      minR.position.set(3, 2.0, 0); minR.rotation.x = Math.PI;
+      createLabel3D("MIN Der (β≤2)", 3, 3.0, 0, "#d97706", "#fff", 2.6);
+
+      createCylinderEdge(root.position, minL.position, 0.06, 0x94a3b8);
+      createCylinderEdge(root.position, minR.position, 0.06, 0x94a3b8);
+
+      const leaves = [
+        { x: -4.2, val: "5" }, { x: -1.8, val: "8" }, { x: 1.8, val: "2" }, { x: 4.2, val: "?" }
+      ];
+      leaves.forEach((l, i) => {
+        const sp = register3D(new THREE.Mesh(new THREE.SphereGeometry(0.4, 20, 20), new THREE.MeshStandardMaterial({ color: 0x64748b })));
+        sp.position.set(l.x, 0, 0);
+        mmNodes.push(sp);
+        const parent = i < 2 ? minL.position : minR.position;
+        const edge = createCylinderEdge(parent, sp.position, 0.05, 0xcbd5e1);
+        if (i === 3) mmPruneEdge = edge;
+        createLabel3D(`Utilidad: ${l.val}`, l.x, -0.9, 0, "#475569", "#fff", 2.2);
+      });
+
+      mmPruneLabel = createLabel3D("Rama Derecha Activa", 4.2, 1.1, 0, "#64748b", "#fff", 2.8);
+    }
+
+    function evalLeftMinimax() {
+      mmNodes[0].material.color.setHex(0x16a34a);
+      mmNodes[1].material.color.setHex(0x38bdf8);
+      if (mmRootLabel) updateLabel3D(mmRootLabel, "MAX asegura α = 5", "#16a34a");
+    }
+
+    function executeAlphaBetaPruning() {
+      evalLeftMinimax();
+      mmNodes[2].material.color.setHex(0xd97706);
+      // Nodo 3 podado
+      mmNodes[3].material.color.setHex(0xdc2626);
+      mmNodes[3].scale.set(0.45, 0.45, 0.45);
+      if (mmPruneEdge) mmPruneEdge.material.color.setHex(0xdc2626);
+      if (mmPruneLabel) updateLabel3D(mmPruneLabel, "✂️ PODA α-β (β=2 ≤ α=5)", "#dc2626");
+      if (mmRootLabel) updateLabel3D(mmRootLabel, "Jugada Ganadora: Izq (+5)", "#16a34a");
+    }
+
+    // --- CONCEPTO 7: Búsqueda en Entornos Dinámicos ---
+    let dynVehicle, dynLidarRing, dynRock, dynRockLabel, dynCarLabel, dynEvasionTube;
+    function setupConcept7() {
+      // Autopista
+      const road = register3D(new THREE.Mesh(new THREE.BoxGeometry(5, 0.15, 15), new THREE.MeshStandardMaterial({ color: 0x334155 })));
+      road.position.set(0, 0, 0);
+
+      // Línea divisoria de carril
+      const line = register3D(new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.18, 14.5), new THREE.MeshStandardMaterial({ color: 0xfacc15 })));
+      line.position.set(0, 0.02, 0);
+
+      // Vehículo autónomo
+      dynVehicle = register3D(new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.65, 2.2), new THREE.MeshStandardMaterial({ color: 0x2563eb })));
+      dynVehicle.position.set(0, 0.45, -5.5);
+      dynCarLabel = createLabel3D("Agente Autónomo (LIDAR Activo)", 0, 2.1, -5.5, "#2563eb", "#fff", 3.6);
+
+      // Anillo radar LIDAR
+      dynLidarRing = register3D(new THREE.Mesh(new THREE.RingGeometry(0.8, 1.0, 32), new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide })));
+      dynLidarRing.rotation.x = Math.PI / 2;
+      dynLidarRing.position.set(0, 0.15, -5.5);
+
+      activeAnimations.push((t) => {
+        if (dynLidarRing && dynVehicle) {
+          const s = 1 + (t * 2.5 % 1.8);
+          dynLidarRing.scale.set(s, s, 1);
+          dynLidarRing.position.copy(dynVehicle.position);
+          dynLidarRing.position.y = 0.15;
+        }
+      });
+
+      // Obstáculo dinámico (oculto arriba inicialmente)
+      dynRock = register3D(new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 1.1, 20), new THREE.MeshStandardMaterial({ color: 0xdc2626 })));
+      dynRock.position.set(0, -5, 0);
+      dynRockLabel = createLabel3D("Obstáculo en Vía", 0, -5, 0, "#dc2626", "#fff", 2.8);
+
+      // Curva de evasión D* Lite
+      const curve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(0, 0.2, -5.5),
+        new THREE.Vector3(0, 0.2, -2.5),
+        new THREE.Vector3(1.6, 0.2, 0),
+        new THREE.Vector3(0, 0.2, 2.8),
+        new THREE.Vector3(0, 0.2, 5.5)
+      ]);
+      dynEvasionTube = register3D(new THREE.Mesh(new THREE.TubeGeometry(curve, 36, 0.1, 10, false), new THREE.MeshStandardMaterial({ color: 0x16a34a })));
+      dynEvasionTube.visible = false;
+    }
+
+    function runDynamicCarSim() {
+      dynRock.position.set(0, 0.6, 0);
+      dynRockLabel.position.set(0, 2.1, 0);
+      updateLabel3D(dynRockLabel, "⚠️ ¡Obstáculo Detectado!", "#dc2626");
+      dynEvasionTube.visible = true;
+
+      const points = [
+        [0, -5.5], [0, -3.5], [0.8, -1.8], [1.6, 0], [1.2, 1.8], [0, 3.5], [0, 5.2]
+      ];
+      points.forEach(([x, z], idx) => {
+        setTimeout(() => {
+          if (dynVehicle) dynVehicle.position.set(x, 0.45, z);
+          if (dynCarLabel) {
+            dynCarLabel.position.set(x, 2.1, z);
+            updateLabel3D(
+              dynCarLabel,
+              idx >= 2 && idx <= 4 ? "D* Lite: Maniobra Evasiva" : "Ruta Segura Restablecida",
+              idx >= 2 && idx <= 4 ? "#d97706" : "#16a34a"
+            );
+          }
+        }, idx * 280);
+      });
+    }
+
+    // --- CONCEPTO 8: Metaheurísticas (PSO Enjambre) ---
+    let psoParticles = [], psoGlobalLabel;
+    function setupConcept8() {
+      psoParticles = [];
+      const geo = new THREE.PlaneGeometry(12, 12, 24, 24);
+      geo.rotateX(-Math.PI / 2);
+      const pos = geo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i), z = pos.getZ(i);
+        const y = (x * x + z * z) * 0.08 + Math.sin(x * 1.5) * 0.4;
+        pos.setY(i, y);
+      }
+      geo.computeVertexNormals();
+      register3D(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0x60a5fa, wireframe: true })));
+
+      // Marcador de Óptimo Global en el fondo del valle (0,0,0)
+      const target = register3D(new THREE.Mesh(new THREE.SphereGeometry(0.45, 24, 24), new THREE.MeshStandardMaterial({ color: 0x16a34a })));
+      target.position.set(0, 0.2, 0);
+      psoGlobalLabel = createLabel3D("Óptimo Global gBest (0,0)", 0, 1.5, 0, "#16a34a", "#fff", 3.4);
+
+      for (let i = 0; i < 16; i++) {
+        const sp = register3D(new THREE.Mesh(new THREE.SphereGeometry(0.25, 16, 16), new THREE.MeshStandardMaterial({ color: 0x2563eb })));
+        const rx = (Math.random() - 0.5) * 9;
+        const rz = (Math.random() - 0.5) * 9;
+        sp.position.set(rx, (rx*rx + rz*rz)*0.08 + 0.5, rz);
+        psoParticles.push(sp);
+      }
+    }
+
+    function convergeSwarmPSO(converge) {
+      psoParticles.forEach((p, idx) => {
+        setTimeout(() => {
+          if (converge) {
+            const nx = (Math.random() - 0.5) * 0.9;
+            const nz = (Math.random() - 0.5) * 0.9;
+            p.position.set(nx, 0.35, nz);
+            p.material.color.setHex(0x16a34a);
+          } else {
+            const rx = (Math.random() - 0.5) * 9.5;
+            const rz = (Math.random() - 0.5) * 9.5;
+            p.position.set(rx, (rx*rx + rz*rz)*0.08 + 0.5, rz);
+            p.material.color.setHex(0x2563eb);
+          }
+        }, idx * 45);
+      });
+      if (psoGlobalLabel) {
+        updateLabel3D(psoGlobalLabel, converge ? "¡Enjambre Convergido en gBest!" : "Exploración Estocástica Activa", converge ? "#16a34a" : "#2563eb");
+      }
+    }
+
+    // --- CONCEPTO 9: Bases de Conocimiento (TELL / ASK) ---
+    let kbCubes = [], kbSprites = [], kbMainStatus;
+    function setupConcept9() {
+      kbCubes = []; kbSprites = [];
+      const items = [
+        { title: "Hecho 1: Infección", x: -4.2 },
+        { title: "Hecho 2: Alergia Penicilina", x: -1.4 },
+        { title: "Axioma: Penicilina ⊂ Betalact.", x: 1.4 },
+        { title: "Inferencia: Contraindicación", x: 4.2 }
+      ];
+
+      items.forEach((it, idx) => {
+        const c = register3D(new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.3, 1.6), new THREE.MeshStandardMaterial({ color: 0x64748b })));
+        c.position.set(it.x, 0.7, 0);
+        kbCubes.push(c);
+        kbSprites.push(createLabel3D(it.title, it.x, 2.1, 0, "#334155", "#fff", 3.1));
+      });
+
+      for (let i = 0; i < 3; i++) {
+        createCylinderEdge(kbCubes[i].position, kbCubes[i+1].position, 0.08, 0xcbd5e1);
+      }
+
+      kbMainStatus = createLabel3D("Repositorio KB Formal Listo", 0, 3.8, 0, "#2563eb", "#fff", 4.2);
+    }
+
+    function insertKB3D() {
+      kbCubes[0].material.color.setHex(0x2563eb);
+      kbCubes[1].material.color.setHex(0x2563eb);
+      kbCubes[2].material.color.setHex(0x0284c7);
+      updateLabel3D(kbSprites[0], "TELL: Infección = TRUE", "#2563eb");
+      updateLabel3D(kbSprites[1], "TELL: Alergia = TRUE", "#2563eb");
+      updateLabel3D(kbMainStatus, "TELL(KB): Hechos Registrados en Memoria", "#0284c7");
+    }
+
+    function queryKB3D() {
+      insertKB3D();
+      kbCubes[3].material.color.setHex(0xdc2626);
+      updateLabel3D(kbSprites[3], "ASK ➔ ¡Fármaco Bloqueado!", "#dc2626");
+      updateLabel3D(kbMainStatus, "Deducción KB ⊨ Contraindicación Confirmada", "#dc2626");
+    }
+
+    // --- CONCEPTO 10: Modelos Simbólico, Conexionista e Híbrido ---
+    let nnSpheres = [], symBoxMesh, bridgeMesh, hybridBanner;
+    function setupConcept10() {
+      nnSpheres = [];
+      // Red Neuronal (Izquierda)
+      for (let l = 0; l < 3; l++) {
+        for (let n = 0; n < 3; n++) {
+          const sp = register3D(new THREE.Mesh(new THREE.SphereGeometry(0.35, 20, 20), new THREE.MeshStandardMaterial({ color: 0x64748b })));
+          sp.position.set(-4.5 + l * 1.4, 0.7 + n * 1.2, 0);
+          nnSpheres.push(sp);
+        }
+      }
+      createLabel3D("Red Conexionista (CNN)", -3.1, 4.3, 0, "#0284c7", "#fff", 3.4);
+
+      // Puente Neuro-Simbólico
+      bridgeMesh = createCylinderEdge(new THREE.Vector3(-1.7, 1.9, 0), new THREE.Vector3(2.2, 1.9, 0), 0.14, 0x94a3b8);
+      createLabel3D("Traducción Vector ➔ Símbolo", 0.2, 3.0, 0, "#d97706", "#fff", 3.4);
+
+      // Motor Simbólico (Derecha)
+      symBoxMesh = register3D(new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.8, 1.8), new THREE.MeshStandardMaterial({ color: 0x64748b })));
+      symBoxMesh.position.set(3.4, 1.9, 0);
+      createLabel3D("Motor de Reglas Simbólico", 3.4, 4.3, 0, "#16a34a", "#fff", 3.4);
+
+      hybridBanner = createLabel3D("Arquitectura Neuro-Simbólica", 0, 5.5, 0, "#1e293b", "#fff", 4.2);
+    }
+
+    function triggerNeuralOnly() {
+      nnSpheres.forEach(s => s.material.color.setHex(0x0284c7));
+      bridgeMesh.material.color.setHex(0x94a3b8);
+      symBoxMesh.material.color.setHex(0x64748b);
+      updateLabel3D(hybridBanner, "Fase Conexionista: Patrón Detectado (p=0.96)", "#0284c7");
+    }
+
+    function triggerHybridFlow() {
+      nnSpheres.forEach(s => s.material.color.setHex(0x0284c7));
+      bridgeMesh.material.color.setHex(0xeab308);
+      symBoxMesh.material.color.setHex(0x16a34a);
+      updateLabel3D(hybridBanner, "✅ Diagnóstico Híbrido Validado y Explicado", "#16a34a");
+    }
+
+    // --- CONCEPTO 11: Lógica Clásica y Deducción (Modus Ponens) ---
+    let ringVert, ringMam, sphereDog, logicTopLabel;
+    function setupConcept11() {
+      // Anillo Exterior: Vertebrados
+      ringVert = register3D(new THREE.Mesh(new THREE.TorusGeometry(4.0, 0.16, 20, 64), new THREE.MeshStandardMaterial({ color: 0x64748b })));
+      ringVert.rotation.x = Math.PI / 2;
+      ringVert.position.y = 0.2;
+      createLabel3D("Conjunto ∀x: Vertebrados(x)", 0, 0.9, -4.0, "#334155", "#fff", 3.6);
+
+      // Anillo Medio: Mamíferos
+      ringMam = register3D(new THREE.Mesh(new THREE.TorusGeometry(2.4, 0.16, 20, 64), new THREE.MeshStandardMaterial({ color: 0x2563eb })));
+      ringMam.rotation.x = Math.PI / 2;
+      ringMam.position.y = 0.2;
+      createLabel3D("Subconjunto: Mamíferos(x)", 0, 0.9, -2.2, "#2563eb", "#fff", 3.4);
+
+      // Esfera Central: Instancia Perro
+      sphereDog = register3D(new THREE.Mesh(new THREE.SphereGeometry(0.65, 28, 28), new THREE.MeshStandardMaterial({ color: 0x0284c7 })));
+      sphereDog.position.set(0, 0.65, 0);
+      createLabel3D("Instancia: Perro", 0, 1.9, 0, "#0284c7", "#fff", 2.6);
+
+      logicTopLabel = createLabel3D("Premisas Listas para Inferencia", 0, 3.8, 0, "#1e293b", "#fff", 4.2);
+    }
+
+    function fireModusPonens3D() {
+      ringVert.material.color.setHex(0x16a34a);
+      ringMam.material.color.setHex(0xeab308);
+      sphereDog.material.color.setHex(0x16a34a);
+      sphereDog.scale.set(1.25, 1.25, 1.25);
+      updateLabel3D(logicTopLabel, "Modus Ponens ⊢ Vertebrado(Perro) = VERDADERO", "#16a34a");
+    }
+
+    // --- CONCEPTO 12: Reglas de Producción y Sistemas Expertos ---
+    let expToken, expGate, expStatusLabel;
+    function setupConcept12() {
+      const belt = register3D(new THREE.Mesh(new THREE.BoxGeometry(11, 0.25, 2.2), new THREE.MeshStandardMaterial({ color: 0x475569 })));
+      belt.position.set(0, 0, 0);
+
+      expGate = register3D(new THREE.Mesh(new THREE.BoxGeometry(0.5, 3.2, 2.8), new THREE.MeshStandardMaterial({ color: 0xd97706, transparent: true, opacity: 0.75 })));
+      expGate.position.set(0, 1.6, 0);
+      createLabel3D("Regla IF: Monto>$10k ∧ Extranjero", 0, 3.8, 0, "#d97706", "#fff", 4.2);
+
+      expToken = register3D(new THREE.Mesh(new THREE.SphereGeometry(0.55, 24, 24), new THREE.MeshStandardMaterial({ color: 0x2563eb })));
+      expToken.position.set(-4.5, 0.65, 0);
+
+      expStatusLabel = createLabel3D("Memoria de Trabajo Lista", -4.5, 1.9, 0, "#2563eb", "#fff", 3.4);
+    }
+
+    function runExpertSystemSim(mode) {
+      const positions = [-4.5, -3.0, -1.5, 0, 1.8, 3.5];
+      positions.forEach((px, idx) => {
+        setTimeout(() => {
+          if (!expToken) return;
+          expToken.position.x = px;
+          expStatusLabel.position.x = px;
+
+          if (px < 0) {
+            expToken.material.color.setHex(0x2563eb);
+            updateLabel3D(expStatusLabel, mode === 'fraude' ? "Hecho: $15,000 (Extranjero)" : "Hecho: $45 (Compra Local)", "#2563eb");
+          } else {
+            if (mode === 'fraude') {
+              expGate.material.color.setHex(0xdc2626);
+              expToken.material.color.setHex(0xdc2626);
+              updateLabel3D(expStatusLabel, "🚨 THEN: ¡TARJETA BLOQUEADA!", "#dc2626");
+            } else {
+              expGate.material.color.setHex(0x16a34a);
+              expToken.material.color.setHex(0x16a34a);
+              updateLabel3D(expStatusLabel, "✅ Regla Falsa: Pago Aprobado", "#16a34a");
+            }
+          }
+        }, idx * 240);
+      });
+    }
+
+    // --- CONCEPTO 13: Marcos Conceptuales (Frames) y Ranuras ---
+    let frameWheels = [], frameEngineMesh, frameMotorLabel, frameHeaderLabel;
+    function setupConcept13() {
+      frameWheels = [];
+      // Chasis wireframe
+      const body = register3D(new THREE.Mesh(new THREE.BoxGeometry(3.4, 1.2, 5.2), new THREE.MeshStandardMaterial({ color: 0x2563eb, wireframe: true })));
+      body.position.set(0, 1.1, 0);
+
+      // Motor central (Slot personalizable)
+      frameEngineMesh = register3D(new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.9, 1.5), new THREE.MeshStandardMaterial({ color: 0xd97706 })));
+      frameEngineMesh.position.set(0, 1.1, -1.2);
+      frameMotorLabel = createLabel3D("Slot Motor: Estándar", 0, 2.5, -1.2, "#d97706", "#fff", 3.0);
+
+      // 4 Ruedas (Slot heredado por defecto)
+      [[-1.8, 0.5, -1.6], [1.8, 0.5, -1.6], [-1.8, 0.5, 1.6], [1.8, 0.5, 1.6]].forEach(([x, y, z]) => {
+        const w = register3D(new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.35, 20), new THREE.MeshStandardMaterial({ color: 0x16a34a })));
+        w.rotation.z = Math.PI / 2;
+        w.position.set(x, y, z);
+        frameWheels.push(w);
+      });
+      createLabel3D("Slot Ruedas = 4 (Heredado)", 2.4, 1.6, 1.6, "#16a34a", "#fff", 3.2);
+
+      frameHeaderLabel = createLabel3D("Frame: Automóvil (Herencia Es-Un Vehículo)", 0, 4.0, 0, "#1e293b", "#fff", 4.5);
+    }
+
+    function customizeCarFrame(mode) {
+      if (mode === 'default') {
+        frameWheels.forEach(w => w.material.color.setHex(0x16a34a));
+        frameEngineMesh.material.color.setHex(0xd97706);
+        updateLabel3D(frameMotorLabel, "Slot Motor: Estándar (Defecto)", "#d97706");
+        updateLabel3D(frameHeaderLabel, "Herencia Activa: 4 Ruedas por Defecto", "#16a34a");
+      } else {
+        frameEngineMesh.material.color.setHex(0x0284c7);
+        frameEngineMesh.scale.set(1.2, 1.2, 1.2);
+        updateLabel3D(frameMotorLabel, "Override Slot: Motor V8 / Eléctrico", "#0284c7");
+        updateLabel3D(frameHeaderLabel, "Sub-Frame Instanciado con Override", "#0284c7");
+      }
+    }
+
+    // --- CONCEPTO 14: Redes Semánticas y Grafos de Conocimiento ---
+    let semSpheres = [], semEdges = [], semBanner;
+    function setupConcept14() {
+      semSpheres = []; semEdges = [];
+      const nodes = [
+        { name: "Cervantes", x: -4.2, y: 1.5, z: 0, col: 0x2563eb },
+        { name: "Don Quijote", x: 0, y: 1.5, z: 1.5, col: 0x16a34a },
+        { name: "Novela", x: 4.2, y: 1.5, z: 0, col: 0x0284c7 },
+        { name: "Siglo XVII", x: 0, y: 4.0, z: -1.0, col: 0xd97706 }
+      ];
+
+      nodes.forEach(n => {
+        const sp = register3D(new THREE.Mesh(new THREE.SphereGeometry(0.65, 24, 24), new THREE.MeshStandardMaterial({ color: n.col })));
+        sp.position.set(n.x, n.y, n.z);
+        semSpheres.push(sp);
+        createLabel3D(n.name, n.x, n.y + 1.1, n.z, "#1e293b", "#fff", 2.6);
+      });
+
+      const rels = [
+        [0, 1, "es_autor_de"],
+        [1, 2, "es_una"],
+        [1, 3, "publicada_en"],
+        [0, 3, "vivió_en (Inferido)"]
+      ];
+
+      rels.forEach(([u, v, pred]) => {
+        const p1 = semSpheres[u].position, p2 = semSpheres[v].position;
+        const edge = createCylinderEdge(p1, p2, 0.07, 0xcbd5e1);
+        semEdges.push(edge);
+        const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+        createLabel3D(`[${pred}]`, mid.x, mid.y + 0.45, mid.z, "#475569", "#fff", 2.5);
+      });
+
+      semBanner = createLabel3D("Grafo Semántico de Tripletas RDF", 0, 5.6, 0, "#2563eb", "#fff", 4.2);
+    }
+
+    function highlightTriple(u, v) {
+      semSpheres.forEach(s => s.scale.set(1, 1, 1));
+      semSpheres[u].scale.set(1.3, 1.3, 1.3);
+      semSpheres[v].scale.set(1.3, 1.3, 1.3);
+      semEdges[0].material.color.setHex(0xeab308);
+      updateLabel3D(semBanner, "Tripleta Activa: ⟨Cervantes, es_autor_de, Don Quijote⟩", "#16a34a");
+    }
+
+    function traverseSemanticGraph() {
+      semSpheres.forEach(s => s.scale.set(1.25, 1.25, 1.25));
+      semEdges.forEach(e => e.material.color.setHex(0x16a34a));
+      updateLabel3D(semBanner, "Inferencia Transitiva: Cervantes ➔ Autor del Siglo XVII", "#16a34a");
+    }
+
+    // --- CONCEPTO 15: Lógica de la Incertidumbre (Campana de Gauss 3D) ---
+    let gaussMesh, gaussRing, gaussLabel;
+    function setupConcept15() {
+      const pts = [];
+      for (let r = 0; r <= 4; r += 0.2) {
+        const y = Math.exp(-0.45 * r * r) * 3.0;
+        pts.push(new THREE.Vector2(r, y));
+      }
+      const latheGeo = new THREE.LatheGeometry(pts, 32);
+      gaussMesh = register3D(new THREE.Mesh(latheGeo, new THREE.MeshStandardMaterial({
+        color: 0x0284c7, transparent: true, opacity: 0.75, side: THREE.DoubleSide
+      })));
+      gaussMesh.position.y = 0.05;
+
+      gaussRing = register3D(new THREE.Mesh(new THREE.RingGeometry(1.8, 2.0, 32), new THREE.MeshBasicMaterial({ color: 0xd97706, side: THREE.DoubleSide })));
+      gaussRing.rotation.x = Math.PI / 2;
+      gaussRing.position.y = 0.1;
+
+      gaussLabel = createLabel3D("Distribución N(μ, σ²) | Confianza = 75%", 0, 4.2, 0, "#0284c7", "#fff", 4.2);
+    }
+
+    function adjustGaussianUncertainty(mode) {
+      if (!gaussMesh) return;
+      if (mode === 'ruido') {
+        gaussMesh.scale.set(1.45, 0.55, 1.45);
+        gaussMesh.material.color.setHex(0xd97706);
+        gaussRing.scale.set(1.5, 1.5, 1);
+        updateLabel3D(gaussLabel, "Sensor Ruidoso (σ=1.8) ➔ Certeza Baja: 52.0%", "#d97706");
+      } else {
+        gaussMesh.scale.set(0.65, 1.35, 0.65);
+        gaussMesh.material.color.setHex(0x16a34a);
+        gaussRing.scale.set(0.6, 0.6, 1);
+        updateLabel3D(gaussLabel, "Fusión Bayesiana (σ=0.4) ➔ Certeza Alta: 96.4%", "#16a34a");
+      }
+    }
+
+    // --- CONCEPTO 16: Redes Bayesianas ---
+    let bayesCylinders = [], bayesSprites = [];
+    function setupConcept16() {
+      bayesCylinders = []; bayesSprites = [];
+      const nodes = [
+        { name: "P(Lluvia) = 20%", x: -3.2, y: 3.4, z: 0, col: 0x2563eb },
+        { name: "P(Rociador) = 30%", x: 3.2, y: 3.4, z: 0, col: 0x0284c7 },
+        { name: "P(Césped Mojado) = 44%", x: 0, y: 0.6, z: 0, col: 0x64748b }
+      ];
+
+      nodes.forEach(n => {
+        const cyl = register3D(new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.45, 28), new THREE.MeshStandardMaterial({ color: n.col })));
+        cyl.rotation.x = Math.PI / 2;
+        cyl.position.set(n.x, n.y, n.z);
+        bayesCylinders.push(cyl);
+        bayesSprites.push(createLabel3D(n.name, n.x, n.y + 1.25, n.z, "#1e293b", "#fff", 3.2));
+      });
+
+      createCylinderEdge(bayesCylinders[0].position, bayesCylinders[2].position, 0.08, 0x94a3b8);
+      createCylinderEdge(bayesCylinders[1].position, bayesCylinders[2].position, 0.08, 0x94a3b8);
+    }
+
+    function updateBayesNetwork(mode) {
+      if (mode === 'mojado') {
+        bayesCylinders[2].material.color.setHex(0x16a34a);
+        bayesCylinders[0].material.color.setHex(0xeab308);
+        updateLabel3D(bayesSprites[2], "Evidencia: Césped Mojado = 100%", "#16a34a");
+        updateLabel3D(bayesSprites[0], "P(Lluvia | Mojado) = 70.8% ⬆️", "#d97706");
+        updateLabel3D(bayesSprites[1], "P(Rociador | Mojado) = 43.2% ⬆️", "#0284c7");
+      } else {
+        bayesCylinders[1].material.color.setHex(0x16a34a);
+        bayesCylinders[0].material.color.setHex(0x64748b);
+        updateLabel3D(bayesSprites[1], "Evidencia: Rociador = 100%", "#16a34a");
+        updateLabel3D(bayesSprites[0], "Explaining Away: P(Lluvia) = 28.0% ⬇️", "#475569");
+      }
+    }
+
+    // --- CONCEPTO 17: Lógica Borrosa (Fuzzy Logic) ---
+    let fuzzyBladesGroup, fuzzyBars = [], fuzzyStatusLabel;
+    window.fuzzySpinSpeed = 2.0;
+
+    function setupConcept17() {
+      window.fuzzySpinSpeed = 2.0;
+      fuzzyBars = [];
+
+      // Ventilador central
+      const stand = register3D(new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.5, 2.2, 16), new THREE.MeshStandardMaterial({ color: 0x64748b })));
+      stand.position.set(-2.5, 1.1, 0);
+
+      fuzzyBladesGroup = register3D(new THREE.Group());
+      fuzzyBladesGroup.position.set(-2.5, 2.2, 0.3);
+
+      const b1 = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.35, 0.1), new THREE.MeshStandardMaterial({ color: 0x2563eb }));
+      const b2 = new THREE.Mesh(new THREE.BoxGeometry(0.35, 2.6, 0.1), new THREE.MeshStandardMaterial({ color: 0x2563eb }));
+      fuzzyBladesGroup.add(b1, b2);
+
+      activeAnimations.push(() => {
+        if (fuzzyBladesGroup) {
+          fuzzyBladesGroup.rotation.z -= 0.03 * window.fuzzySpinSpeed;
+        }
+      });
+
+      // 3 Barras de grado de pertenencia μ(x) ∈ [0,1]
+      const sets = [
+        { name: "μ_Frío", x: 1.2, col: 0x0284c7 },
+        { name: "μ_Templado", x: 2.8, col: 0xd97706 },
+        { name: "μ_Caliente", x: 4.4, col: 0xdc2626 }
+      ];
+
+      sets.forEach(s => {
+        const bar = register3D(new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.5, 0.9), new THREE.MeshStandardMaterial({ color: s.col })));
+        bar.position.set(s.x, 0.75, 0);
+        fuzzyBars.push(bar);
+        createLabel3D(s.name, s.x, -0.5, 0.8, "#1e293b", "#fff", 2.1);
+      });
+
+      fuzzyStatusLabel = createLabel3D("Control Difuso: 22°C ➔ Motor al 40%", 0, 4.3, 0, "#2563eb", "#fff", 4.2);
+    }
+
+    function setFuzzyTemperature(temp) {
+      let muFrio = 0.1, muTemp = 0.8, muCal = 0.1, colorHex = 0x0284c7, msg = "";
+      if (temp <= 18) {
+        muFrio = 0.95; muTemp = 0.15; muCal = 0.05;
+        window.fuzzySpinSpeed = 0.6;
+        colorHex = 0x0284c7;
+        msg = "16°C (Frío μ=0.95) ➔ Potencia Motor: 12%";
+      } else if (temp <= 30) {
+        muFrio = 0.1; muTemp = 0.65; muCal = 0.45;
+        window.fuzzySpinSpeed = 2.8;
+        colorHex = 0xd97706;
+        msg = "27°C (Templado/Caliente) ➔ Potencia Motor: 58%";
+      } else {
+        muFrio = 0.05; muTemp = 0.1; muCal = 1.0;
+        window.fuzzySpinSpeed = 6.5;
+        colorHex = 0xdc2626;
+        msg = "38°C (Muy Caliente μ=1.0) ➔ Potencia Motor: 100%";
+      }
+
+      const heights = [muFrio * 3.2, muTemp * 3.2, muCal * 3.2];
+      fuzzyBars.forEach((b, i) => {
+        b.scale.y = Math.max(0.15, heights[i] / 1.5);
+        b.position.y = (1.5 * b.scale.y) / 2;
+      });
+
+      fuzzyBladesGroup.children.forEach(c => c.material.color.setHex(colorHex));
+      updateLabel3D(fuzzyStatusLabel, msg, colorHex === 0xdc2626 ? "#dc2626" : (colorHex === 0xd97706 ? "#d97706" : "#0284c7"));
+    }
+
+    // --- CONCEPTO 18: Ontologías y Web Semántica (OWL / SNOMED-CT) ---
+    let ontoNodes = [], ontoEdges = [], ontoMainLabel;
+    function setupConcept18() {
+      ontoNodes = []; ontoEdges = [];
+      const center = register3D(new THREE.Mesh(new THREE.SphereGeometry(0.85, 32, 32), new THREE.MeshStandardMaterial({ color: 0x2563eb })));
+      center.position.set(0, 2.0, 0);
+      ontoNodes.push(center);
+      createLabel3D("owl:Class Patología (SNOMED)", 0, 3.4, 0, "#2563eb", "#fff", 3.6);
+
+      const subclasses = [
+        "Cardiopatía", "Neumonía", "Infección Viral", "Traumatismo", "Trastorno Neurológico", "Enf. Autoinmune"
+      ];
+
+      subclasses.forEach((name, idx) => {
+        const angle = (idx / subclasses.length) * Math.PI * 2;
+        const x = Math.cos(angle) * 4.2;
+        const z = Math.sin(angle) * 4.2;
+        const sp = register3D(new THREE.Mesh(new THREE.SphereGeometry(0.5, 24, 24), new THREE.MeshStandardMaterial({ color: 0x059669 })));
+        sp.position.set(x, 1.2, z);
+        ontoNodes.push(sp);
+
+        const edge = createCylinderEdge(center.position, sp.position, 0.06, 0x94a3b8);
+        ontoEdges.push(edge);
+        createLabel3D(`rdfs:subClassOf ${name}`, x, 2.2, z, "#059669", "#fff", 2.9);
+      });
+
+      ontoMainLabel = createLabel3D("Vocabulario Ontológico W3C (RDF / OWL)", 0, 5.0, 0, "#1e293b", "#fff", 4.4);
+    }
+
+    function runOntologyReasoner() {
+      ontoNodes.forEach((n, i) => {
+        n.material.color.setHex(i === 0 ? 0x7c3aed : 0x16a34a);
+        n.scale.set(1.18, 1.18, 1.18);
+      });
+      ontoEdges.forEach(e => e.material.color.setHex(0x7c3aed));
+      updateLabel3D(ontoMainLabel, "✅ Razonador OWL-DL: Taxonomía Consistente e Interoperable", "#7c3aed");
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# Archivos temporales y de sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs y caches
+*.log
+.cache/
+
+# Entornos y editores
+.vscode/
+.idea/
+*.suo
+*.user
