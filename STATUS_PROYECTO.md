@@ -5,6 +5,7 @@
 > **Fecha de Emisión:** 19 de Octubre de 2026  
 > **Autor / Arquitecto:** Ing. Juancito Peña  
 > **Repositorio Oficial:** [GitHub - Simulador-Interactivo-3D-Inteligencia-Artificial](https://github.com/JUANCITOPENA/Simulador-Interactivo-3D-Inteligencia-Artificial)  
+> **Acceso Web en Vivo (GitHub Pages):** [https://juancitopena.github.io/Simulador-Interactivo-3D-Inteligencia-Artificial/](https://juancitopena.github.io/Simulador-Interactivo-3D-Inteligencia-Artificial/)  
 > **Versión Actual:** `v1.0.0-PRO`  
 > **Estado Operativo:** `🟢 100% FUNCIONAL Y ESTABLE (LISTO PARA PRODUCCIÓN/DOCENCIA)`
 

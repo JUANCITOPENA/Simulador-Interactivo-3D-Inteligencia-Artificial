@@ -8,12 +8,12 @@
 ![WebGL](https://img.shields.io/badge/Render-WebGL_Hardware_Accelerated-990000?style=for-the-badge&logo=webgl)
 ![Bootstrap](https://img.shields.io/badge/UI_Framework-Bootstrap_5.3.2-purple?style=for-the-badge&logo=bootstrap)
 ![Audio Engine](https://img.shields.io/badge/Audio-Web_Speech_API_(TTS)-green?style=for-the-badge&logo=soundcharts)
-![License](https://img.shields.io/badge/License-MIT-success?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-100%25_Funcional_y_Estable-brightgreen?style=for-the-badge)
+![Live Demo](https://img.shields.io/badge/Live_Demo-GitHub_Pages-success?style=for-the-badge&logo=github)
+![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
 
 **Autor:** Ing. Juancito Peña | **Edición:** Master Architect Pro 2026
 
-[🚀 Explorar Módulos](#-catálogo-de-los-19-módulos-interactivos) • [🕹️ Cómo Ejecutar](#️-guía-rápida-de-ejecución) • [🧠 Arquitectura Técnica](#-arquitectura-técnica) • [📋 Estado del Proyecto](file:///STATUS_PROYECTO.md)
+[🌐 Ver Demo en Vivo (GitHub Pages)](https://juancitopena.github.io/Simulador-Interactivo-3D-Inteligencia-Artificial/) • [🚀 Explorar Módulos](#-catálogo-de-los-19-módulos-interactivos) • [🕹️ Cómo Ejecutar](#️-guía-rápida-de-ejecución) • [🧠 Arquitectura Técnica](#-arquitectura-técnica) • [📋 Estado del Proyecto](file:///STATUS_PROYECTO.md)
 
 </div>
 
